@@ -21,7 +21,7 @@
 
 static const uint32_t pageSizes[] = { 8, 16, 32, 64, 128, 256, 512, 1024 };
 
-FlashClass::FlashClass(const void *flash_addr, uint32_t size) :
+FlashClass::FlashClass(void *flash_addr, uint32_t size) :
   PAGE_SIZE(pageSizes[NVMCTRL->PARAM.bit.PSZ]),
   PAGES(NVMCTRL->PARAM.bit.NVMP),
   MAX_FLASH(PAGE_SIZE * PAGES),
@@ -36,23 +36,30 @@ static inline uint32_t read_unaligned_uint32(const void *data)
   union {
     uint32_t u32;
     uint8_t u8[4];
-  } res;
+  }res;
+
   const uint8_t *d = (const uint8_t *)data;
   res.u8[0] = d[0];
   res.u8[1] = d[1];
   res.u8[2] = d[2];
   res.u8[3] = d[3];
+  Serial.println(res.u32);
   return res.u32;
 }
 
-void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_t size)
+void FlashClass::write(volatile void *flash_ptr, const void *data, uint32_t size)
 {
 
+
+  Serial.print("pageSizes : ");
+  Serial.println((uint32_t)pageSizes[NVMCTRL->PARAM.bit.PSZ]);
+  Serial.print("pages : ");
+  Serial.println(NVMCTRL->PARAM.bit.NVMP);
   // Calculate data boundaries
   size = (size + 3) / 4;
   
   volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr;
-  const uint8_t *src_addr = (const uint8_t *)data;
+  const uint8_t *src_addr = (uint8_t *)data;
 
   // Disable automatic page write
   NVMCTRL->CTRLB.bit.MANW = 1;
@@ -66,7 +73,7 @@ void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_
 
     // Fill page buffer
     uint32_t i;
-    for (i=0; i<(PAGE_SIZE/4) && size; i++) {
+    for (i=0; i<(PAGE_SIZE/8) && size; i++) {
       *dst_addr = read_unaligned_uint32(src_addr);
       src_addr += 4;
       dst_addr++;
@@ -79,59 +86,60 @@ void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_
   }
 }
 
-void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_t size, int label)
+void FlashClass::write(volatile void *flash_ptr, const void *data, uint32_t size, int label)
 {
   Serial.print("pageSizes : ");
-  Serial.println(NVMCTRL->PARAM.bit.PSZ);
+  Serial.println(PAGE_SIZE);
   Serial.print("pages : ");
   Serial.println(NVMCTRL->PARAM.bit.NVMP);
   // Calculate data boundaries
   
   size = (size + 3) / 4;
 
-  volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr;
-  Serial.print("first packet address: ");
-  Serial.println((unsigned long int)dst_addr);
-
   Serial.print("size * label = ");
   Serial.println((int)size*label);
-  dst_addr=dst_addr+size*label;
+  volatile uint32_t *dst_addr=(volatile uint32_t *)flash_ptr+size*label;
+
   Serial.print(label);
   Serial.print(" -th packet address: ");
-  Serial.println((unsigned long int)dst_addr);
-  const uint8_t *src_addr = (const uint8_t *)data;
+  Serial.println((uint32_t)dst_addr);
+  const uint8_t *src_addr = (uint8_t *)data;
 
   // Disable automatic page write
   NVMCTRL->CTRLB.bit.MANW = 1;
+  //NVMCTRL->ADDR.reg = ((uint32_t)dst_addr) / 2;
 
   // Do writes in pages
   while (size) {
     // Execute "PBC" Page Buffer Clear
-    
+   
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
     while (NVMCTRL->INTFLAG.bit.READY == 0) { }
 
     // Fill page buffer
     uint32_t i;
-    for (i=0; i<(PAGE_SIZE/4) && size; i++) {
-      *dst_addr = read_unaligned_uint32(src_addr);
-       Serial.print("written_dst:");
-      Serial.println((int)(*dst_addr));
+    for (i=0; i<(PAGE_SIZE/8) && size; i++) {
+       uint32_t ret= read_unaligned_uint32(src_addr);
+       Serial.print("ret : ");
+       Serial.println(ret);
+       *dst_addr=ret;
+        Serial.print("written_dst:");
+      Serial.println((uint32_t)*dst_addr);
       src_addr += 4;
       dst_addr++;
-     
       size--;
     }
-
+    
+//  NVMCTRL->ADDR.reg = ((uint32_t)dst_addr) / 2;
     // Execute "WP" Write Page
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
     while (NVMCTRL->INTFLAG.bit.READY == 0) { }
   }
 }
 
-void FlashClass::erase(const volatile void *flash_ptr, uint32_t size)
+void FlashClass::erase(volatile void *flash_ptr, uint32_t size)
 {
-  const uint8_t *ptr = (const uint8_t *)flash_ptr;
+  uint8_t *ptr = (uint8_t *)flash_ptr;
   while (size > ROW_SIZE) {
     erase(ptr);
     ptr += ROW_SIZE;
@@ -140,11 +148,10 @@ void FlashClass::erase(const volatile void *flash_ptr, uint32_t size)
   erase(ptr);
 }
 
-void FlashClass::erase(const volatile void *flash_ptr, uint32_t size,int label)
+void FlashClass::erase(volatile void *flash_ptr, uint32_t size,int label)
 {
   uint32_t size_p = (size + 3) / 4;
-  volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr;
-  dst_addr=dst_addr+size_p*label;
+  volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr+size_p*label;
   uint8_t *ptr = (uint8_t *)dst_addr;
   while (size > ROW_SIZE) {
     erase(ptr);
@@ -154,27 +161,30 @@ void FlashClass::erase(const volatile void *flash_ptr, uint32_t size,int label)
   erase(ptr);
 }
 
-void FlashClass::erase(const volatile void *flash_ptr)
+void FlashClass::erase(volatile void *flash_ptr)
 {
+  Serial.println(NVMCTRL->ADDR.reg);
+  Serial.println(NVMCTRL->CTRLA.reg);
   NVMCTRL->ADDR.reg = ((uint32_t)flash_ptr) / 2;
   NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_ER;
+  Serial.println(NVMCTRL->ADDR.reg);
+  Serial.println(NVMCTRL->CTRLA.reg);
   while (!NVMCTRL->INTFLAG.bit.READY) { }
 }
 
 
-void FlashClass::read(const volatile void *flash_ptr, void *data, uint32_t size)
+void FlashClass::read(volatile void *flash_ptr, void *data, uint32_t size)
 {
-  memcpy(data, (const void *)flash_ptr, size);
+  memcpy(data, (uint8_t *)flash_ptr, size);
 }
 
-void FlashClass::read(const volatile void *flash_ptr, void *data, uint32_t size,int label)
+void FlashClass::read(volatile void *flash_ptr, void *data, uint32_t size,int label)
 {
   // Calculate data boundaries
   size = (size + 3) / 4;
   
-  volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr;
-  dst_addr=dst_addr+size*label;
-  memcpy(data,(const void *)dst_addr, size);
+  volatile uint32_t *dst_addr = (volatile uint32_t *)flash_ptr+size*label;
+  memcpy(data,(uint8_t *)dst_addr, size);
 
 }
 
