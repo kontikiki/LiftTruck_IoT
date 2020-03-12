@@ -115,16 +115,11 @@ void FlashClass::write(const volatile void *flash_ptr, const void *data, uint32_
     uint32_t i;
     for (i=0; i<(PAGE_SIZE/4) && size; i++) {
       *dst_addr = read_unaligned_uint32(src_addr);
+       Serial.print("written_dst:");
+      Serial.println(*dst_addr);
       src_addr += 4;
       dst_addr++;
-      Serial.print("src:");
-      Serial.print(*src_addr);
-      Serial.print(*(src_addr+1));
-      Serial.print(*(src_addr+2));
-      Serial.print(*(src_addr+3));
-      Serial.print(*(src_addr+4));
-      Serial.print(*(src_addr+5));
-
+     
       size--;
     }
 
