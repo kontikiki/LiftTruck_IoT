@@ -719,7 +719,7 @@ void setup() {
   adxl.setActivityThreshold(20);  // 62.5mg per increment   // Set activity   // activity thresholds (0-255)
 
 
-  adxl.setInactivityXYZ(0, 0, 1);     // Set to detect inactivity in all the axes "adxl.setInactivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
+  adxl.setInactivityXYZ(0, 0, 0);     // Set to detect inactivity in all the axes "adxl.setInactivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
 
   adxl.setInactivityThreshold(20);    // 62.5mg per increment   // Set inactivity // Inactivity thresholds (0-255)
   adxl.setTimeInactivity(20);
