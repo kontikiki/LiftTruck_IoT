@@ -24,7 +24,6 @@ bool accel_flag=false;
 // Initialize our values
 float number1 = 0;
 float number2 = 0;
-int number3 = 0;
 
 int cnt;
 
@@ -44,14 +43,13 @@ typedef struct EEPROMpacket {
   timestamp active_time;
   float svg_max;
   float avg_svg;
-  int num;
 } EEPROMpacket;
 
 EEPROMpacket EEPROMpkt;
 EEPROMpacket writtenPacket[48];
 int pkt_num;
 
-Flash(accel_data_store, sizeof(EEPROMpacket));
+Flash(accel_data_store,(uint32_t)sizeof(EEPROMpacket));
 
 void sendThingSpeak(int number) {
   int j;
@@ -62,11 +60,10 @@ void sendThingSpeak(int number) {
 
     number1 = writtenPacket[j].svg_max;
     number2 = writtenPacket[j].avg_svg;
-    number3 = writtenPacket[j].num;
+    
 
     ThingSpeak.setField(1, number1);
     ThingSpeak.setField(2, number2);
-    ThingSpeak.setField(3, number3);
 
     ThingSpeak.setStatus(myStatus);
 
@@ -99,9 +96,7 @@ int readPacketFromFlash() {
 
   int i = 0;
   while (i < pkt_num) {
-    accel_data_store.read(&(writtenPacket[i]), i);
-    Serial.print("read packet number: ");
-    Serial.println(writtenPacket[i].num);
+    accel_data_store.read(&(writtenPacket[i]),i);
     sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %f avg_svg: %f\n", writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_year, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].svg_max, writtenPacket[i].avg_svg);
     Serial.println(buf);
     i++;
@@ -114,8 +109,8 @@ int readPacketFromFlash() {
 }
 
 void writePacketToFlash() {
-
-  accel_data_store.write(&EEPROMpkt, pkt_num);
+  accel_data_store.erase(pkt_num);
+  accel_data_store.write(&EEPROMpkt,pkt_num);
 
   pkt_num++;
   Serial.println("Flash Writing Process Success.");
@@ -123,7 +118,8 @@ void writePacketToFlash() {
 
 void packetMake(float svg_max, float avg_svg) {
   getHighActiveTime();
-  Serial.print("written packet time : ");
+  /*
+  Serial.println("written packet time : ");
   Serial.println(EEPROMpkt.active_time.g_day);
   Serial.println(EEPROMpkt.active_time.g_month);
   Serial.println(EEPROMpkt.active_time.g_year);
@@ -131,16 +127,16 @@ void packetMake(float svg_max, float avg_svg) {
   Serial.println(EEPROMpkt.active_time.g_minutes);
   Serial.println(EEPROMpkt.active_time.g_seconds);
   Serial.println("------------------");
-  
+  */
   EEPROMpkt.svg_max = svg_max;
   EEPROMpkt.avg_svg = avg_svg;
-  EEPROMpkt.num = pkt_num;
-
-  Serial.print("written packet data : ");
+  /*
+  Serial.println("written packet data : ");
   Serial.println(EEPROMpkt.svg_max);
   Serial.println(EEPROMpkt.avg_svg);
   Serial.println(EEPROMpkt.num);
   Serial.println("============");
+  */
   Serial.println("Packet Make Success");
 }
 

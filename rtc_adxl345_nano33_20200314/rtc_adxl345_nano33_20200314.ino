@@ -454,7 +454,7 @@ int readPacketFromFlash() {
   }
 
   Serial.print(i);
-  Serial.println(" packets in flash read Success.");
+  Serial.println(" packets in flash were Read Successly.");
 
   return i;
 }
@@ -726,7 +726,7 @@ void setup() {
 
   adxl.setTapDetectionOnXYZ(0, 0, 0);
 
-  adxl.setInterruptLevelBit(0);
+  adxl.setInterruptLevelBit(1);
   //adxl.setInterruptMapping(ADXL345_INT_ACTIVITY_BIT, ADXL345_INT1_PIN);
 
   adxl.InactivityINT(0);
@@ -745,7 +745,6 @@ void setup() {
   */
 
   LowPower.attachInterruptWakeup(pin, onAccelFlag, FALLING);
-  delay(3000);
   Serial.println("mcu is going to sleep.. ");
   Serial.println();
   Serial.end();
@@ -775,7 +774,7 @@ void loop() {
     int num = readPacketFromFlash();
 
     if (num == pkt_num) {
-      Serial.println("all written packets are read from flash Successly.");
+      Serial.println("all written packets were read from flash Successly.");
     }
 
     sendThingSpeak(pkt_num);
@@ -868,7 +867,7 @@ void loop() {
       adxl.setActivityXYZ(0, 0, 1);
 
 
-  //    pinMode(pin, INPUT_PULLUP);
+//      pinMode(pin, INPUT_PULLUP);
 
       attachInterrupt(pin, onAccelFlag, FALLING);
 
@@ -974,7 +973,7 @@ void loop() {
 
       adxl.ActivityINT(1);
       adxl.setActivityXYZ(0, 0, 1);
-  //     pinMode(pin, INPUT_PULLUP);
+//      pinMode(pin, INPUT_PULLUP);
       attachInterrupt(pin, onAccelFlag, FALLING);
 
       EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
@@ -995,7 +994,7 @@ void loop() {
 void onHighFlag() {
 //  pinMode(pin, OUTPUT);
   delay(500);
- //  detachInterrupt(pin);
+   detachInterrupt(pin);
   setActiveAlarm_flag = true;
 }
 

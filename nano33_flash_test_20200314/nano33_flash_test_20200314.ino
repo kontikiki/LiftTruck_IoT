@@ -49,7 +49,11 @@ EEPROMpacket EEPROMpkt;
 EEPROMpacket writtenPacket[32];
 int pkt_num;
 
-Flash(accel_data_store,sizeof(EEPROMpacket));
+FlashStorage(accel_data_store0,EEPROMpacket);
+FlashStorage(accel_data_store1,EEPROMpacket);
+FlashStorage(accel_data_store2,EEPROMpacket);
+FlashStorage(accel_data_store3,EEPROMpacket);
+FlashStorage(accel_data_store4,EEPROMpacket);
 
 void sendThingSpeak(int number) {
   int j;
@@ -86,11 +90,25 @@ void sendThingSpeak(int number) {
 void initFlash() {
   int i;
   for (i = 0; i < pkt_num; i++) {
-    accel_data_store.erase(i);
+    switch(i){
+    case 0 :
+    accel_data_store0.flash.erase();
+    break;
+    case 1:
+    accel_data_store1.flash.erase();
+    break;
+    case 2:
+    accel_data_store2.flash.erase();
+    break;
+    case 3:
+    accel_data_store3.flash.erase();
+    break;
+    case 4:
+    accel_data_store4.flash.erase();
+    break; 
+  }
   }
   pkt_num = 0;
-  NVMCTRL->ADDR.reg = ((uint32_t)accel_data_store.flash_address) / 2;
-  Serial.println(NVMCTRL->ADDR.reg);
 }
 
 
@@ -98,7 +116,23 @@ int readPacketFromFlash() {
 
   int i = 0;
   while (i < pkt_num) {
-    accel_data_store.read(&(writtenPacket[i]),i);
+    switch(i){
+    case 0 :
+    accel_data_store0.read(&(writtenPacket[i]));
+    break;
+    case 1:
+    accel_data_store1.read(&(writtenPacket[i]));
+    break;
+    case 2:
+    accel_data_store2.read(&(writtenPacket[i]));
+    break;
+    case 3:
+    accel_data_store3.read(&(writtenPacket[i]));
+    break;
+    case 4:
+    accel_data_store4.read(&(writtenPacket[i]));
+    break; 
+  }
     sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %f avg_svg: %f\n", writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_year, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].svg_max, writtenPacket[i].avg_svg);
     Serial.println(buf);
     i++;
@@ -111,8 +145,24 @@ int readPacketFromFlash() {
 }
 
 void writePacketToFlash() {
-  accel_data_store.erase(pkt_num);
-  accel_data_store.write(&EEPROMpkt,pkt_num);
+  switch(pkt_num){
+    case 0 :
+    accel_data_store0.write(EEPROMpkt);
+    break;
+    case 1:
+    accel_data_store1.write(EEPROMpkt);
+    break;
+    case 2:
+    accel_data_store2.write(EEPROMpkt);
+    break;
+    case 3:
+    accel_data_store3.write(EEPROMpkt);
+    break;
+    case 4:
+    accel_data_store4.write(EEPROMpkt);
+    break;
+    
+  }
 
   pkt_num++;
   Serial.println("Flash Writing Process Success.");
