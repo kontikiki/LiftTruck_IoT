@@ -615,7 +615,7 @@ void writePacketToFlash() {
 
 void packetMake(float svg_max, float avg_svg) {
   getHighActiveTime();
-  Serial.print("written packet time : ");
+  Serial.println("written packet time : ");
   Serial.println(EEPROMpkt.active_time.g_day);
   Serial.println(EEPROMpkt.active_time.g_month);
   Serial.println(EEPROMpkt.active_time.g_year);
@@ -628,7 +628,7 @@ void packetMake(float svg_max, float avg_svg) {
   EEPROMpkt.num = pkt_num;
 
   
-  Serial.print("written packet data : ");
+  Serial.println("written packet data : ");
   Serial.println(EEPROMpkt.svg_max);
   Serial.println(EEPROMpkt.avg_svg);
   Serial.println(EEPROMpkt.num);
