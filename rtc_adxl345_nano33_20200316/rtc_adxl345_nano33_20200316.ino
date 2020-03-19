@@ -716,7 +716,7 @@ void setup() {
   //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
   adxl.setRangeSetting(8);  // range settings : Accepted values are 2g, 4g, 8g or 16g
-  adxl.setRate({3.125);
+  adxl.setRate(3.125);
   //adxl.setSpiBit(1);
 
   adxl.setActivityXYZ(0, 0, 1); // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
