@@ -729,7 +729,7 @@ void setup() {
 
   adxl.setTapDetectionOnXYZ(0, 0, 0);
 
-  adxl.setInterruptLevelBit(0);
+  adxl.setInterruptLevelBit(1);
   //adxl.setInterruptMapping(ADXL345_INT_ACTIVITY_BIT, ADXL345_INT1_PIN);
 
   adxl.InactivityINT(0);
