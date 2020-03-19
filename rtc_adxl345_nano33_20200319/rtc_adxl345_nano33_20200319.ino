@@ -715,8 +715,8 @@ void setup() {
   //adxl.writeTo(ADXL345_POWER_CTL, 24);  //auto sleep mode, measure state
   //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
-  adxl.setRangeSetting(4);  // range settings : Accepted values are 2g, 4g, 8g or 16g
-  adxl.setRate(3.125);
+  adxl.setRangeSetting(8);  // range settings : Accepted values are 2g, 4g, 8g or 16g
+  adxl.setRate(1.563);
   //adxl.setSpiBit(1);
 
   adxl.setActivityXYZ(0, 0, 1); // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
@@ -807,7 +807,7 @@ void loop() {
     float svg_max = 0;
 
 
-    //100Hz sampling
+    //1.563Hz sampling
     for (int i = 0; i < 500; i++) {
 
       adxl.readAccel(&x, &y, &z);
@@ -835,7 +835,7 @@ void loop() {
             Serial.print("svg= ");
             Serial.println(svg_acc);
       */
-      delay(10);
+      delay(630);
     }
 
     avg_svg = total_svg / 1000.0;
