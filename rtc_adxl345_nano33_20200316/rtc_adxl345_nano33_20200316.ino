@@ -12,7 +12,7 @@
 #include "secrets.h"
 
 #define DEFINE_ACCEL 20.0
-int cnt=0;
+int cnt = 0;
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
@@ -42,71 +42,72 @@ volatile bool time_flag = false;  //24 o'clock RTC wake up interrupt flag (for s
 volatile bool accel_flag = false; //accelerometer activity-wake up interrupt flag
 //volatile bool inact_flag = false;
 volatile bool setActiveAlarm_flag = false;
+
 char buf[64];
 
 typedef struct timestamp {
   int g_day, g_month, g_year, g_hours, g_minutes, g_seconds;
-}timestamp;
+} timestamp;
 
 typedef struct EEPROMpacket {
   timestamp active_time;
   float svg_max;
   float avg_svg;
   int num;
-}EEPROMpacket;
+} EEPROMpacket;
 
 EEPROMpacket EEPROMpkt;
 EEPROMpacket writtenPacket[48];
 volatile int pkt_num;
 
-FlashStorage(accel_data_store0,EEPROMpacket);
-FlashStorage(accel_data_store1,EEPROMpacket);
-FlashStorage(accel_data_store2,EEPROMpacket);
-FlashStorage(accel_data_store3,EEPROMpacket);
-FlashStorage(accel_data_store4,EEPROMpacket);
-FlashStorage(accel_data_store5,EEPROMpacket);
-FlashStorage(accel_data_store6,EEPROMpacket);
-FlashStorage(accel_data_store7,EEPROMpacket);
-FlashStorage(accel_data_store8,EEPROMpacket);
-FlashStorage(accel_data_store9,EEPROMpacket);
-FlashStorage(accel_data_store10,EEPROMpacket);
-FlashStorage(accel_data_store11,EEPROMpacket);
-FlashStorage(accel_data_store12,EEPROMpacket);
-FlashStorage(accel_data_store13,EEPROMpacket);
-FlashStorage(accel_data_store14,EEPROMpacket);
-FlashStorage(accel_data_store15,EEPROMpacket);
-FlashStorage(accel_data_store16,EEPROMpacket);
-FlashStorage(accel_data_store17,EEPROMpacket);
-FlashStorage(accel_data_store18,EEPROMpacket);
-FlashStorage(accel_data_store19,EEPROMpacket);
-FlashStorage(accel_data_store20,EEPROMpacket);
-FlashStorage(accel_data_store21,EEPROMpacket);
-FlashStorage(accel_data_store22,EEPROMpacket);
-FlashStorage(accel_data_store23,EEPROMpacket);
-FlashStorage(accel_data_store24,EEPROMpacket);
-FlashStorage(accel_data_store25,EEPROMpacket);
-FlashStorage(accel_data_store26,EEPROMpacket);
-FlashStorage(accel_data_store27,EEPROMpacket);
-FlashStorage(accel_data_store28,EEPROMpacket);
-FlashStorage(accel_data_store29,EEPROMpacket);
-FlashStorage(accel_data_store30,EEPROMpacket);
-FlashStorage(accel_data_store31,EEPROMpacket);
-FlashStorage(accel_data_store32,EEPROMpacket);
-FlashStorage(accel_data_store33,EEPROMpacket);
-FlashStorage(accel_data_store34,EEPROMpacket);
-FlashStorage(accel_data_store35,EEPROMpacket);
-FlashStorage(accel_data_store36,EEPROMpacket);
-FlashStorage(accel_data_store37,EEPROMpacket);
-FlashStorage(accel_data_store38,EEPROMpacket);
-FlashStorage(accel_data_store39,EEPROMpacket);
-FlashStorage(accel_data_store40,EEPROMpacket);
-FlashStorage(accel_data_store41,EEPROMpacket);
-FlashStorage(accel_data_store42,EEPROMpacket);
-FlashStorage(accel_data_store43,EEPROMpacket);
-FlashStorage(accel_data_store44,EEPROMpacket);
-FlashStorage(accel_data_store45,EEPROMpacket);
-FlashStorage(accel_data_store46,EEPROMpacket);
-FlashStorage(accel_data_store47,EEPROMpacket);
+FlashStorage(accel_data_store0, EEPROMpacket);
+FlashStorage(accel_data_store1, EEPROMpacket);
+FlashStorage(accel_data_store2, EEPROMpacket);
+FlashStorage(accel_data_store3, EEPROMpacket);
+FlashStorage(accel_data_store4, EEPROMpacket);
+FlashStorage(accel_data_store5, EEPROMpacket);
+FlashStorage(accel_data_store6, EEPROMpacket);
+FlashStorage(accel_data_store7, EEPROMpacket);
+FlashStorage(accel_data_store8, EEPROMpacket);
+FlashStorage(accel_data_store9, EEPROMpacket);
+FlashStorage(accel_data_store10, EEPROMpacket);
+FlashStorage(accel_data_store11, EEPROMpacket);
+FlashStorage(accel_data_store12, EEPROMpacket);
+FlashStorage(accel_data_store13, EEPROMpacket);
+FlashStorage(accel_data_store14, EEPROMpacket);
+FlashStorage(accel_data_store15, EEPROMpacket);
+FlashStorage(accel_data_store16, EEPROMpacket);
+FlashStorage(accel_data_store17, EEPROMpacket);
+FlashStorage(accel_data_store18, EEPROMpacket);
+FlashStorage(accel_data_store19, EEPROMpacket);
+FlashStorage(accel_data_store20, EEPROMpacket);
+FlashStorage(accel_data_store21, EEPROMpacket);
+FlashStorage(accel_data_store22, EEPROMpacket);
+FlashStorage(accel_data_store23, EEPROMpacket);
+FlashStorage(accel_data_store24, EEPROMpacket);
+FlashStorage(accel_data_store25, EEPROMpacket);
+FlashStorage(accel_data_store26, EEPROMpacket);
+FlashStorage(accel_data_store27, EEPROMpacket);
+FlashStorage(accel_data_store28, EEPROMpacket);
+FlashStorage(accel_data_store29, EEPROMpacket);
+FlashStorage(accel_data_store30, EEPROMpacket);
+FlashStorage(accel_data_store31, EEPROMpacket);
+FlashStorage(accel_data_store32, EEPROMpacket);
+FlashStorage(accel_data_store33, EEPROMpacket);
+FlashStorage(accel_data_store34, EEPROMpacket);
+FlashStorage(accel_data_store35, EEPROMpacket);
+FlashStorage(accel_data_store36, EEPROMpacket);
+FlashStorage(accel_data_store37, EEPROMpacket);
+FlashStorage(accel_data_store38, EEPROMpacket);
+FlashStorage(accel_data_store39, EEPROMpacket);
+FlashStorage(accel_data_store40, EEPROMpacket);
+FlashStorage(accel_data_store41, EEPROMpacket);
+FlashStorage(accel_data_store42, EEPROMpacket);
+FlashStorage(accel_data_store43, EEPROMpacket);
+FlashStorage(accel_data_store44, EEPROMpacket);
+FlashStorage(accel_data_store45, EEPROMpacket);
+FlashStorage(accel_data_store46, EEPROMpacket);
+FlashStorage(accel_data_store47, EEPROMpacket);
 
 float base_accx, base_accy, base_accz;
 
@@ -144,152 +145,152 @@ void sendThingSpeak(int number) {
 void initFlash() {
   int i;
   for (i = 0; i < pkt_num; i++) {
-    switch(i){
-    case 0 :
-    accel_data_store0.flash.erase();
-    break;
-    case 1:
-    accel_data_store1.flash.erase();
-    break;
-    case 2:
-    accel_data_store2.flash.erase();
-    break;
-    case 3:
-    accel_data_store3.flash.erase();
-    break;
-    case 4:
-    accel_data_store4.flash.erase();
-    break; 
-    case 5:
-    accel_data_store5.flash.erase();
-    break;
-    case 6:
-    accel_data_store6.flash.erase();
-    break;
-    case 7:
-    accel_data_store7.flash.erase();
-    break;
-    case 8:
-    accel_data_store8.flash.erase();
-    break;
-    case 9:
-    accel_data_store9.flash.erase();
-    break;
-    case 10 :
-    accel_data_store10.flash.erase();
-    break;
-    case 11:
-    accel_data_store11.flash.erase();
-    break;
-    case 12:
-    accel_data_store12.flash.erase();
-    break;
-    case 13:
-    accel_data_store13.flash.erase();
-    break;
-    case 14:
-    accel_data_store14.flash.erase();
-    break; 
-    case 15:
-    accel_data_store15.flash.erase();
-    break;
-    case 16:
-    accel_data_store16.flash.erase();
-    break;
-    case 17:
-    accel_data_store17.flash.erase();
-    break;
-    case 18:
-    accel_data_store18.flash.erase();
-    break;
-    case 19:
-    accel_data_store19.flash.erase();
-    break;
-    case 20 :
-    accel_data_store20.flash.erase();
-    break;
-    case 21:
-    accel_data_store21.flash.erase();
-    break;
-    case 22:
-    accel_data_store22.flash.erase();
-    break;
-    case 23:
-    accel_data_store23.flash.erase();
-    break;
-    case 24:
-    accel_data_store24.flash.erase();
-    break; 
-    case 25:
-    accel_data_store25.flash.erase();
-    break;
-    case 26:
-    accel_data_store26.flash.erase();
-    break;
-    case 27:
-    accel_data_store27.flash.erase();
-    break;
-    case 28:
-    accel_data_store28.flash.erase();
-    break;
-    case 29:
-    accel_data_store29.flash.erase();
-    break;
-    case 30 :
-    accel_data_store30.flash.erase();
-    break;
-    case 31:
-    accel_data_store31.flash.erase();
-    break;
-    case 32:
-    accel_data_store32.flash.erase();
-    break;
-    case 33:
-    accel_data_store33.flash.erase();
-    break;
-    case 34:
-    accel_data_store34.flash.erase();
-    break; 
-    case 35:
-    accel_data_store35.flash.erase();
-    break;
-    case 36:
-    accel_data_store36.flash.erase();
-    break;
-    case 37:
-    accel_data_store37.flash.erase();
-    break;
-    case 38:
-    accel_data_store38.flash.erase();
-    break;
-    case 39:
-    accel_data_store39.flash.erase();
-    break;
-    case 40 :
-    accel_data_store40.flash.erase();
-    break;
-    case 41:
-    accel_data_store41.flash.erase();
-    break;
-    case 42:
-    accel_data_store42.flash.erase();
-    break;
-    case 43:
-    accel_data_store43.flash.erase();
-    break;
-    case 44:
-    accel_data_store44.flash.erase();
-    break; 
-    case 45:
-    accel_data_store45.flash.erase();
-    break;
-    case 46:
-    accel_data_store46.flash.erase();
-    break;
-    case 47:
-    accel_data_store47.flash.erase();
-    break;
-  }
+    switch (i) {
+      case 0 :
+        accel_data_store0.flash.erase();
+        break;
+      case 1:
+        accel_data_store1.flash.erase();
+        break;
+      case 2:
+        accel_data_store2.flash.erase();
+        break;
+      case 3:
+        accel_data_store3.flash.erase();
+        break;
+      case 4:
+        accel_data_store4.flash.erase();
+        break;
+      case 5:
+        accel_data_store5.flash.erase();
+        break;
+      case 6:
+        accel_data_store6.flash.erase();
+        break;
+      case 7:
+        accel_data_store7.flash.erase();
+        break;
+      case 8:
+        accel_data_store8.flash.erase();
+        break;
+      case 9:
+        accel_data_store9.flash.erase();
+        break;
+      case 10 :
+        accel_data_store10.flash.erase();
+        break;
+      case 11:
+        accel_data_store11.flash.erase();
+        break;
+      case 12:
+        accel_data_store12.flash.erase();
+        break;
+      case 13:
+        accel_data_store13.flash.erase();
+        break;
+      case 14:
+        accel_data_store14.flash.erase();
+        break;
+      case 15:
+        accel_data_store15.flash.erase();
+        break;
+      case 16:
+        accel_data_store16.flash.erase();
+        break;
+      case 17:
+        accel_data_store17.flash.erase();
+        break;
+      case 18:
+        accel_data_store18.flash.erase();
+        break;
+      case 19:
+        accel_data_store19.flash.erase();
+        break;
+      case 20 :
+        accel_data_store20.flash.erase();
+        break;
+      case 21:
+        accel_data_store21.flash.erase();
+        break;
+      case 22:
+        accel_data_store22.flash.erase();
+        break;
+      case 23:
+        accel_data_store23.flash.erase();
+        break;
+      case 24:
+        accel_data_store24.flash.erase();
+        break;
+      case 25:
+        accel_data_store25.flash.erase();
+        break;
+      case 26:
+        accel_data_store26.flash.erase();
+        break;
+      case 27:
+        accel_data_store27.flash.erase();
+        break;
+      case 28:
+        accel_data_store28.flash.erase();
+        break;
+      case 29:
+        accel_data_store29.flash.erase();
+        break;
+      case 30 :
+        accel_data_store30.flash.erase();
+        break;
+      case 31:
+        accel_data_store31.flash.erase();
+        break;
+      case 32:
+        accel_data_store32.flash.erase();
+        break;
+      case 33:
+        accel_data_store33.flash.erase();
+        break;
+      case 34:
+        accel_data_store34.flash.erase();
+        break;
+      case 35:
+        accel_data_store35.flash.erase();
+        break;
+      case 36:
+        accel_data_store36.flash.erase();
+        break;
+      case 37:
+        accel_data_store37.flash.erase();
+        break;
+      case 38:
+        accel_data_store38.flash.erase();
+        break;
+      case 39:
+        accel_data_store39.flash.erase();
+        break;
+      case 40 :
+        accel_data_store40.flash.erase();
+        break;
+      case 41:
+        accel_data_store41.flash.erase();
+        break;
+      case 42:
+        accel_data_store42.flash.erase();
+        break;
+      case 43:
+        accel_data_store43.flash.erase();
+        break;
+      case 44:
+        accel_data_store44.flash.erase();
+        break;
+      case 45:
+        accel_data_store45.flash.erase();
+        break;
+      case 46:
+        accel_data_store46.flash.erase();
+        break;
+      case 47:
+        accel_data_store47.flash.erase();
+        break;
+    }
   }
   pkt_num = 0;
 }
@@ -299,152 +300,152 @@ int readPacketFromFlash() {
   int i = 0;
   while (i < pkt_num) {
 
-    switch(i){
-    case 0 :
-    accel_data_store0.read(&(writtenPacket[i]));
-    break;
-    case 1:
-    accel_data_store1.read(&(writtenPacket[i]));
-    break;
-    case 2:
-    accel_data_store2.read(&(writtenPacket[i]));
-    break;
-    case 3:
-    accel_data_store3.read(&(writtenPacket[i]));
-    break;
-    case 4:
-    accel_data_store4.read(&(writtenPacket[i]));
-    break; 
-    case 5:
-    accel_data_store5.read(&(writtenPacket[i]));
-    break;
-    case 6:
-    accel_data_store6.read(&(writtenPacket[i]));
-    break;
-    case 7:
-    accel_data_store7.read(&(writtenPacket[i]));
-    break;
-    case 8:
-    accel_data_store8.read(&(writtenPacket[i]));
-    break;
-    case 9:
-    accel_data_store9.read(&(writtenPacket[i]));
-    break;
-    case 10 :
-    accel_data_store10.read(&(writtenPacket[i]));
-    break;
-    case 11:
-    accel_data_store11.read(&(writtenPacket[i]));
-    break;
-    case 12:
-    accel_data_store12.read(&(writtenPacket[i]));
-    break;
-    case 13:
-    accel_data_store13.read(&(writtenPacket[i]));
-    break;
-    case 14:
-    accel_data_store14.read(&(writtenPacket[i]));
-    break; 
-    case 15:
-    accel_data_store15.read(&(writtenPacket[i]));
-    break;
-    case 16:
-    accel_data_store16.read(&(writtenPacket[i]));
-    break;
-    case 17:
-    accel_data_store17.read(&(writtenPacket[i]));
-    break;
-    case 18:
-    accel_data_store18.read(&(writtenPacket[i]));
-    break;
-    case 19:
-    accel_data_store19.read(&(writtenPacket[i]));
-    break;
-    case 20 :
-    accel_data_store20.read(&(writtenPacket[i]));
-    break;
-    case 21:
-    accel_data_store21.read(&(writtenPacket[i]));
-    break;
-    case 22:
-    accel_data_store22.read(&(writtenPacket[i]));
-    break;
-    case 23:
-    accel_data_store23.read(&(writtenPacket[i]));
-    break;
-    case 24:
-    accel_data_store24.read(&(writtenPacket[i]));
-    break; 
-    case 25:
-    accel_data_store25.read(&(writtenPacket[i]));
-    break;
-    case 26:
-    accel_data_store26.read(&(writtenPacket[i]));
-    break;
-    case 27:
-    accel_data_store27.read(&(writtenPacket[i]));
-    break;
-    case 28:
-    accel_data_store28.read(&(writtenPacket[i]));
-    break;
-    case 29:
-    accel_data_store29.read(&(writtenPacket[i]));
-    break;
-    case 30 :
-    accel_data_store30.read(&(writtenPacket[i]));
-    break;
-    case 31:
-    accel_data_store31.read(&(writtenPacket[i]));
-    break;
-    case 32:
-    accel_data_store32.read(&(writtenPacket[i]));
-    break;
-    case 33:
-    accel_data_store33.read(&(writtenPacket[i]));
-    break;
-    case 34:
-    accel_data_store34.read(&(writtenPacket[i]));
-    break; 
-    case 35:
-    accel_data_store35.read(&(writtenPacket[i]));
-    break;
-    case 36:
-    accel_data_store36.read(&(writtenPacket[i]));
-    break;
-    case 37:
-    accel_data_store37.read(&(writtenPacket[i]));
-    break;
-    case 38:
-    accel_data_store38.read(&(writtenPacket[i]));
-    break;
-    case 39:
-    accel_data_store39.read(&(writtenPacket[i]));
-    break;
-    case 40 :
-    accel_data_store40.read(&(writtenPacket[i]));
-    break;
-    case 41:
-    accel_data_store41.read(&(writtenPacket[i]));
-    break;
-    case 42:
-    accel_data_store42.read(&(writtenPacket[i]));
-    break;
-    case 43:
-    accel_data_store43.read(&(writtenPacket[i]));
-    break;
-    case 44:
-    accel_data_store44.read(&(writtenPacket[i]));
-    break; 
-    case 45:
-    accel_data_store45.read(&(writtenPacket[i]));
-    break;
-    case 46:
-    accel_data_store46.read(&(writtenPacket[i]));
-    break;
-    case 47:
-    accel_data_store47.read(&(writtenPacket[i]));
-    break;
-  }
+    switch (i) {
+      case 0 :
+        accel_data_store0.read(&(writtenPacket[i]));
+        break;
+      case 1:
+        accel_data_store1.read(&(writtenPacket[i]));
+        break;
+      case 2:
+        accel_data_store2.read(&(writtenPacket[i]));
+        break;
+      case 3:
+        accel_data_store3.read(&(writtenPacket[i]));
+        break;
+      case 4:
+        accel_data_store4.read(&(writtenPacket[i]));
+        break;
+      case 5:
+        accel_data_store5.read(&(writtenPacket[i]));
+        break;
+      case 6:
+        accel_data_store6.read(&(writtenPacket[i]));
+        break;
+      case 7:
+        accel_data_store7.read(&(writtenPacket[i]));
+        break;
+      case 8:
+        accel_data_store8.read(&(writtenPacket[i]));
+        break;
+      case 9:
+        accel_data_store9.read(&(writtenPacket[i]));
+        break;
+      case 10 :
+        accel_data_store10.read(&(writtenPacket[i]));
+        break;
+      case 11:
+        accel_data_store11.read(&(writtenPacket[i]));
+        break;
+      case 12:
+        accel_data_store12.read(&(writtenPacket[i]));
+        break;
+      case 13:
+        accel_data_store13.read(&(writtenPacket[i]));
+        break;
+      case 14:
+        accel_data_store14.read(&(writtenPacket[i]));
+        break;
+      case 15:
+        accel_data_store15.read(&(writtenPacket[i]));
+        break;
+      case 16:
+        accel_data_store16.read(&(writtenPacket[i]));
+        break;
+      case 17:
+        accel_data_store17.read(&(writtenPacket[i]));
+        break;
+      case 18:
+        accel_data_store18.read(&(writtenPacket[i]));
+        break;
+      case 19:
+        accel_data_store19.read(&(writtenPacket[i]));
+        break;
+      case 20 :
+        accel_data_store20.read(&(writtenPacket[i]));
+        break;
+      case 21:
+        accel_data_store21.read(&(writtenPacket[i]));
+        break;
+      case 22:
+        accel_data_store22.read(&(writtenPacket[i]));
+        break;
+      case 23:
+        accel_data_store23.read(&(writtenPacket[i]));
+        break;
+      case 24:
+        accel_data_store24.read(&(writtenPacket[i]));
+        break;
+      case 25:
+        accel_data_store25.read(&(writtenPacket[i]));
+        break;
+      case 26:
+        accel_data_store26.read(&(writtenPacket[i]));
+        break;
+      case 27:
+        accel_data_store27.read(&(writtenPacket[i]));
+        break;
+      case 28:
+        accel_data_store28.read(&(writtenPacket[i]));
+        break;
+      case 29:
+        accel_data_store29.read(&(writtenPacket[i]));
+        break;
+      case 30 :
+        accel_data_store30.read(&(writtenPacket[i]));
+        break;
+      case 31:
+        accel_data_store31.read(&(writtenPacket[i]));
+        break;
+      case 32:
+        accel_data_store32.read(&(writtenPacket[i]));
+        break;
+      case 33:
+        accel_data_store33.read(&(writtenPacket[i]));
+        break;
+      case 34:
+        accel_data_store34.read(&(writtenPacket[i]));
+        break;
+      case 35:
+        accel_data_store35.read(&(writtenPacket[i]));
+        break;
+      case 36:
+        accel_data_store36.read(&(writtenPacket[i]));
+        break;
+      case 37:
+        accel_data_store37.read(&(writtenPacket[i]));
+        break;
+      case 38:
+        accel_data_store38.read(&(writtenPacket[i]));
+        break;
+      case 39:
+        accel_data_store39.read(&(writtenPacket[i]));
+        break;
+      case 40 :
+        accel_data_store40.read(&(writtenPacket[i]));
+        break;
+      case 41:
+        accel_data_store41.read(&(writtenPacket[i]));
+        break;
+      case 42:
+        accel_data_store42.read(&(writtenPacket[i]));
+        break;
+      case 43:
+        accel_data_store43.read(&(writtenPacket[i]));
+        break;
+      case 44:
+        accel_data_store44.read(&(writtenPacket[i]));
+        break;
+      case 45:
+        accel_data_store45.read(&(writtenPacket[i]));
+        break;
+      case 46:
+        accel_data_store46.read(&(writtenPacket[i]));
+        break;
+      case 47:
+        accel_data_store47.read(&(writtenPacket[i]));
+        break;
+    }
 
     Serial.print("read packet number: ");
     Serial.println(writtenPacket[i].num);
@@ -461,151 +462,151 @@ int readPacketFromFlash() {
 
 void writePacketToFlash() {
 
-  switch(pkt_num){
+  switch (pkt_num) {
     case 0 :
-    accel_data_store0.write(EEPROMpkt);
-    break;
+      accel_data_store0.write(EEPROMpkt);
+      break;
     case 1:
-    accel_data_store1.write(EEPROMpkt);
-    break;
+      accel_data_store1.write(EEPROMpkt);
+      break;
     case 2:
-    accel_data_store2.write(EEPROMpkt);
-    break;
+      accel_data_store2.write(EEPROMpkt);
+      break;
     case 3:
-    accel_data_store3.write(EEPROMpkt);
-    break;
+      accel_data_store3.write(EEPROMpkt);
+      break;
     case 4:
-    accel_data_store4.write(EEPROMpkt);
-    break; 
+      accel_data_store4.write(EEPROMpkt);
+      break;
     case 5:
-    accel_data_store5.write(EEPROMpkt);
-    break;
+      accel_data_store5.write(EEPROMpkt);
+      break;
     case 6:
-    accel_data_store6.write(EEPROMpkt);
-    break;
+      accel_data_store6.write(EEPROMpkt);
+      break;
     case 7:
-    accel_data_store7.write(EEPROMpkt);
-    break;
+      accel_data_store7.write(EEPROMpkt);
+      break;
     case 8:
-    accel_data_store8.write(EEPROMpkt);
-    break;
+      accel_data_store8.write(EEPROMpkt);
+      break;
     case 9:
-    accel_data_store9.write(EEPROMpkt);
-    break;
+      accel_data_store9.write(EEPROMpkt);
+      break;
     case 10 :
-    accel_data_store10.write(EEPROMpkt);
-    break;
+      accel_data_store10.write(EEPROMpkt);
+      break;
     case 11:
-    accel_data_store11.write(EEPROMpkt);
-    break;
+      accel_data_store11.write(EEPROMpkt);
+      break;
     case 12:
-    accel_data_store12.write(EEPROMpkt);
-    break;
+      accel_data_store12.write(EEPROMpkt);
+      break;
     case 13:
-    accel_data_store13.write(EEPROMpkt);
-    break;
+      accel_data_store13.write(EEPROMpkt);
+      break;
     case 14:
-    accel_data_store14.write(EEPROMpkt);
-    break; 
+      accel_data_store14.write(EEPROMpkt);
+      break;
     case 15:
-    accel_data_store15.write(EEPROMpkt);
-    break;
+      accel_data_store15.write(EEPROMpkt);
+      break;
     case 16:
-    accel_data_store16.write(EEPROMpkt);
-    break;
+      accel_data_store16.write(EEPROMpkt);
+      break;
     case 17:
-    accel_data_store17.write(EEPROMpkt);
-    break;
+      accel_data_store17.write(EEPROMpkt);
+      break;
     case 18:
-    accel_data_store18.write(EEPROMpkt);
-    break;
+      accel_data_store18.write(EEPROMpkt);
+      break;
     case 19:
-    accel_data_store19.write(EEPROMpkt);
-    break;
+      accel_data_store19.write(EEPROMpkt);
+      break;
     case 20 :
-    accel_data_store20.write(EEPROMpkt);
-    break;
+      accel_data_store20.write(EEPROMpkt);
+      break;
     case 21:
-    accel_data_store21.write(EEPROMpkt);
-    break;
+      accel_data_store21.write(EEPROMpkt);
+      break;
     case 22:
-    accel_data_store22.write(EEPROMpkt);
-    break;
+      accel_data_store22.write(EEPROMpkt);
+      break;
     case 23:
-    accel_data_store23.write(EEPROMpkt);
-    break;
+      accel_data_store23.write(EEPROMpkt);
+      break;
     case 24:
-    accel_data_store24.write(EEPROMpkt);
-    break; 
+      accel_data_store24.write(EEPROMpkt);
+      break;
     case 25:
-    accel_data_store25.write(EEPROMpkt);
-    break;
+      accel_data_store25.write(EEPROMpkt);
+      break;
     case 26:
-    accel_data_store26.write(EEPROMpkt);
-    break;
+      accel_data_store26.write(EEPROMpkt);
+      break;
     case 27:
-    accel_data_store27.write(EEPROMpkt);
-    break;
+      accel_data_store27.write(EEPROMpkt);
+      break;
     case 28:
-    accel_data_store28.write(EEPROMpkt);
-    break;
+      accel_data_store28.write(EEPROMpkt);
+      break;
     case 29:
-    accel_data_store29.write(EEPROMpkt);
-    break;
+      accel_data_store29.write(EEPROMpkt);
+      break;
     case 30 :
-    accel_data_store30.write(EEPROMpkt);
-    break;
+      accel_data_store30.write(EEPROMpkt);
+      break;
     case 31:
-    accel_data_store31.write(EEPROMpkt);
-    break;
+      accel_data_store31.write(EEPROMpkt);
+      break;
     case 32:
-    accel_data_store32.write(EEPROMpkt);
-    break;
+      accel_data_store32.write(EEPROMpkt);
+      break;
     case 33:
-    accel_data_store33.write(EEPROMpkt);
-    break;
+      accel_data_store33.write(EEPROMpkt);
+      break;
     case 34:
-    accel_data_store34.write(EEPROMpkt);
-    break; 
+      accel_data_store34.write(EEPROMpkt);
+      break;
     case 35:
-    accel_data_store35.write(EEPROMpkt);
-    break;
+      accel_data_store35.write(EEPROMpkt);
+      break;
     case 36:
-    accel_data_store36.write(EEPROMpkt);
-    break;
+      accel_data_store36.write(EEPROMpkt);
+      break;
     case 37:
-    accel_data_store37.write(EEPROMpkt);
-    break;
+      accel_data_store37.write(EEPROMpkt);
+      break;
     case 38:
-    accel_data_store38.write(EEPROMpkt);
-    break;
+      accel_data_store38.write(EEPROMpkt);
+      break;
     case 39:
-    accel_data_store39.write(EEPROMpkt);
-    break;
+      accel_data_store39.write(EEPROMpkt);
+      break;
     case 40 :
-    accel_data_store40.write(EEPROMpkt);
-    break;
+      accel_data_store40.write(EEPROMpkt);
+      break;
     case 41:
-    accel_data_store41.write(EEPROMpkt);
-    break;
+      accel_data_store41.write(EEPROMpkt);
+      break;
     case 42:
-    accel_data_store42.write(EEPROMpkt);
-    break;
+      accel_data_store42.write(EEPROMpkt);
+      break;
     case 43:
-    accel_data_store43.write(EEPROMpkt);
-    break;
+      accel_data_store43.write(EEPROMpkt);
+      break;
     case 44:
-    accel_data_store44.write(EEPROMpkt);
-    break; 
+      accel_data_store44.write(EEPROMpkt);
+      break;
     case 45:
-    accel_data_store45.write(EEPROMpkt);
-    break;
+      accel_data_store45.write(EEPROMpkt);
+      break;
     case 46:
-    accel_data_store46.write(EEPROMpkt);
-    break;
+      accel_data_store46.write(EEPROMpkt);
+      break;
     case 47:
-    accel_data_store47.write(EEPROMpkt);
-    break;
+      accel_data_store47.write(EEPROMpkt);
+      break;
   }
 
   Serial.println("Flash Writing Process Success.");
@@ -627,7 +628,7 @@ void packetMake(float svg_max, float avg_svg) {
   EEPROMpkt.avg_svg = avg_svg;
   EEPROMpkt.num = pkt_num;
 
-  
+
   Serial.println("written packet data : ");
   Serial.println(EEPROMpkt.svg_max);
   Serial.println(EEPROMpkt.avg_svg);
@@ -655,7 +656,7 @@ void calibAccel() {
     sumAcX += x;
     sumAcY += y;
     sumAcZ += z;
-    delay(100);
+    delay(10);
   }
 
   base_accx = sumAcX / 10;
@@ -675,9 +676,10 @@ void calibAccel() {
 
 void setup() {
   while (!Serial);
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(pin, INPUT_PULLUP);
-  pkt_num=0;
+
+  pkt_num = 0;
 
   /*
     if (WiFi.status() == WL_NO_SHIELD) {
@@ -692,7 +694,7 @@ void setup() {
 
     status = WiFi.begin(ssid, pass);
 
-    delay(10000);
+    delay(5000);
   }
 
   printWiFiStatus();
@@ -706,18 +708,19 @@ void setup() {
   rtc.setAlarmMinutes(00);  //setting alarm time every day
   rtc.enableAlarm(rtc.MATCH_MMSS);
   rtc.attachInterrupt(onTimeFlag);  //alarm interrupt wake up setting
-
+  
+  delayMicroseconds(1100);
   //accelerometer setting
   adxl.powerOn();
-  adxl.writeTo(ADXL345_POWER_CTL, 24);  //auto sleep mode, measure state
+  //adxl.writeTo(ADXL345_POWER_CTL, 24);  //auto sleep mode, measure state
+  //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
-  adxl.setRangeSetting(2);  // range settings : Accepted values are 2g, 4g, 8g or 16g
-  adxl.setRate(100);
+  adxl.setRangeSetting(8);  // range settings : Accepted values are 2g, 4g, 8g or 16g
+  adxl.setRate({3.125);
   //adxl.setSpiBit(1);
 
   adxl.setActivityXYZ(0, 0, 1); // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
   adxl.setActivityThreshold(20);  // 62.5mg per increment   // Set activity   // activity thresholds (0-255)
-
 
   adxl.setInactivityXYZ(0, 0, 0);     // Set to detect inactivity in all the axes "adxl.setInactivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
 
@@ -752,8 +755,7 @@ void setup() {
 }
 
 void loop() {
-
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial);
   Serial.println("wake up!! active-mode");
   /*
@@ -771,6 +773,11 @@ void loop() {
     resetEpoch();
     time_flag = false;
 
+    /*
+       data uploading to IoT Cloud
+
+    */
+
     int num = readPacketFromFlash();
 
     if (num == pkt_num) {
@@ -781,20 +788,14 @@ void loop() {
 
     initFlash();
 
-    delay(500);
+    //delay(500);
 
-    adxl.ActivityINT(1);
     adxl.setActivityXYZ(0, 0, 1);
+    adxl.ActivityINT(1);
 
+    //     adxl.setInterruptLevelBit(0);
+    // pinMode(pin, INPUT_PULLUP);
     attachInterrupt(pin, onAccelFlag, FALLING);
-
-    /*
-       data uploading to IoT Cloud
-
-    */
-
-    EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-    EIC->WAKEUP.reg |= (1 << in);
   }
 
   else if (accel_flag) {
@@ -811,7 +812,7 @@ void loop() {
 
 
     //100Hz sampling
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
 
       adxl.readAccel(&x, &y, &z);
 
@@ -861,18 +862,14 @@ void loop() {
       Serial.println("just normal mode.");
       rtc.attachInterrupt(onTimeFlag);
 
-      delay(500);
+     // delay(500);
 
-      adxl.ActivityINT(1);
+      //  adxl.setInterruptLevelBit(1);
       adxl.setActivityXYZ(0, 0, 1);
-
+      adxl.ActivityINT(1);
 
 //      pinMode(pin, INPUT_PULLUP);
-
       attachInterrupt(pin, onAccelFlag, FALLING);
-
-      EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-      EIC->WAKEUP.reg |= (1 << in);
 
     } else {
       packetMake(svg_max, avg_svg);
@@ -893,9 +890,7 @@ void loop() {
   }//end of accel_flag
 
   else if (setActiveAlarm_flag) {
-    setActiveAlarm_flag = false;
     calibAccel();
-    delay(500);
 
     int x, y, z;
     float cal_x = 0, cal_y = 0, cal_z = 0;
@@ -934,7 +929,7 @@ void loop() {
             Serial.print("svg= ");
             Serial.println(svg_acc);
       */
-      delay(8);
+      delay(10);
     }
 
     avg_svg = total_svg / 1000.0;
@@ -971,14 +966,12 @@ void loop() {
       rtc.enableAlarm(rtc.MATCH_MMSS);
       rtc.attachInterrupt(onTimeFlag);
 
-      adxl.ActivityINT(1);
       adxl.setActivityXYZ(0, 0, 1);
-//      pinMode(pin, INPUT_PULLUP);
+      adxl.ActivityINT(1);
+      // adxl.setInterruptLevelBit(1);
+
+ //     pinMode(pin, INPUT_PULLUP);
       attachInterrupt(pin, onAccelFlag, FALLING);
-
-      EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-      EIC->WAKEUP.reg |= (1 << in);
-
     }
     total_svg = 0;
     svg_max = 0;
@@ -992,32 +985,36 @@ void loop() {
 }
 
 void onHighFlag() {
-//  pinMode(pin, OUTPUT);
-  delay(500);
-   detachInterrupt(pin);
+  //  pinMode(pin, OUTPUT);
+   delay(10);
+  delayMicroseconds(1100);
   setActiveAlarm_flag = true;
 }
 
 void onTimeFlag() {
   time_flag = true;
+  //   pinMode(pin, OUTPUT);
   adxl.ActivityINT(0);
   adxl.setActivityXYZ(0, 0, 0);
-//  pinMode(pin, OUTPUT);
-  delay(500);
+   delay(10);
+  delayMicroseconds(1100);
   detachInterrupt(pin);
-  
+
 }
 
 void onAccelFlag() {
-
-//  pinMode(pin, OUTPUT);
-  delay(500);
-  detachInterrupt(pin);
-
+  //  pinMode(pin, OUTPUT);
+ 
+/*
+delay(10);
+  delayMicroseconds(1100);
+*/
+delay(500);
   rtc.detachInterrupt();
-
-  adxl.ActivityINT(0);
+ adxl.ActivityINT(0);
   adxl.setActivityXYZ(0, 0, 0);
+  detachInterrupt(pin);
+  
   byte interrupts = adxl.getInterruptSource();
   if (adxl.triggered(interrupts, ADXL345_ACTIVITY)) {
 
