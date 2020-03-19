@@ -715,7 +715,11 @@ void setup() {
   //adxl.writeTo(ADXL345_POWER_CTL, 24);  //auto sleep mode, measure state
   //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
+<<<<<<< HEAD
   adxl.setRangeSetting(4);  // range settings : Accepted values are 2g, 4g, 8g or 16g
+=======
+  adxl.setRangeSetting(8);  // range settings : Accepted values are 2g, 4g, 8g or 16g
+>>>>>>> e885570615dcabf5a4a078325c37474adcd9b21e
   adxl.setRate(3.125);
   //adxl.setSpiBit(1);
 
