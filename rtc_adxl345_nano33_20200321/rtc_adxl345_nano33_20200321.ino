@@ -293,7 +293,7 @@ void initFlash(int pktcnt) {
         break;
     }
   }
-  Serial.println("all data in flash was erased successly."); 
+  Serial.println("all data in flash was erased successly.");
   pkt_num = 0;
 }
 
@@ -612,8 +612,8 @@ void writePacketToFlash() {
     default:
       Serial.println("Not enough memory space to use.");
       Serial.println("Initialize the flash address.");
-      initFlash(pkt_num-1);
-      pkt_num=0;
+      initFlash(pkt_num - 1);
+      pkt_num = 0;
       accel_data_store0.write(EEPROMpkt);
       break;
   }
@@ -756,13 +756,13 @@ void setup() {
       Serial.println("adxl345 auto- sleep is off");
     }
   */
- LowPower.attachInterruptWakeup(pin, onAccelFlag, FALLING);
-  
+  LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
   Serial.println("mcu is going to sleep.. ");
   Serial.println();
   Serial.end();
   LowPower.sleep();
-  
+
 }
 
 void loop() {
@@ -784,21 +784,22 @@ void loop() {
     resetEpoch();
     time_flag = false;
 
-    if(pkt_num>0){
-    int num = readPacketFromFlash();
+    if (pkt_num > 0) {
+      int num = readPacketFromFlash();
 
-    if (num == pkt_num) {
-      Serial.println("all written packets were read from flash Successly.");
-    }
+      if (num == pkt_num) {
+        Serial.println("all written packets were read from flash Successly.");
+      }
 
-    sendThingSpeak(pkt_num);
+      sendThingSpeak(pkt_num);
 
-    initFlash(pkt_num);
+      initFlash(pkt_num);
     }
     adxl.setActivityXYZ(0, 0, 1);
     adxl.ActivityINT(1);
 
-    attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+    //attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+    LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
   }
 
   else if (accel_flag) {
@@ -867,10 +868,27 @@ void loop() {
 
       adxl.setActivityXYZ(0, 0, 1);
       adxl.ActivityINT(1);
-      
-      attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-       EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-      EIC->WAKEUP.reg |= (1 << in);
+      LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+      /*
+            attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
+            GCLK->CLKCTRL.bit.CLKEN = 0; //disable GCLK module
+            while (GCLK->STATUS.bit.SYNCBUSY);
+
+            GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK6 | GCLK_CLKCTRL_ID( GCM_EIC )) ;  //EIC clock switched on GCLK6
+            while (GCLK->STATUS.bit.SYNCBUSY);
+
+            GCLK->GENCTRL.reg = (GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_ID(6));  //source for GCLK6 is OSCULP32K
+            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
+
+            GCLK->GENCTRL.bit.RUNSTDBY = 1;  //GCLK6 run standby
+            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
+
+            EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
+            EIC->WAKEUP.reg |= (1 << in);
+
+            NVMCTRL->CTRLB.bit.SLEEPPRM = NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
+      */
 
     } else {
       packetMake(svg_max, avg_svg);
@@ -969,10 +987,29 @@ void loop() {
 
       adxl.setActivityXYZ(0, 0, 1);
       adxl.ActivityINT(1);
-  
-      attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-       EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-      EIC->WAKEUP.reg |= (1 << in);
+
+      LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
+      /*
+            attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
+            GCLK->CLKCTRL.bit.CLKEN = 0; //disable GCLK module
+            while (GCLK->STATUS.bit.SYNCBUSY);
+
+            GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK6 | GCLK_CLKCTRL_ID( GCM_EIC )) ;  //EIC clock switched on GCLK6
+            while (GCLK->STATUS.bit.SYNCBUSY);
+
+            GCLK->GENCTRL.reg = (GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_ID(6));  //source for GCLK6 is OSCULP32K
+            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
+
+            GCLK->GENCTRL.bit.RUNSTDBY = 1;  //GCLK6 run standby
+            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
+
+            EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
+            EIC->WAKEUP.reg |= (1 << in);
+
+            NVMCTRL->CTRLB.bit.SLEEPPRM = NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
+      */
     }
     total_svg = 0;
     svg_max = 0;
