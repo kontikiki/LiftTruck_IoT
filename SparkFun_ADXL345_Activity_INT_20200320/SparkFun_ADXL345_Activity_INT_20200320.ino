@@ -120,8 +120,8 @@ void loop() {
   Serial.print(", ");
   Serial.println(z);
   flag = false;
-  adxl.ActivityINT(1);
-  adxl.setActivityXYZ(0, 0, 1);
+//  adxl.ActivityINT(1);
+//  adxl.setActivityXYZ(0, 0, 1);
   attachInterrupt(digitalPinToInterrupt(interruptPin), ADXL_ISR, FALLING);
 }
 
@@ -130,11 +130,9 @@ void loop() {
 /********************* ISR *********************/
 /* Look for Interrupts and Triggered Action    */
 void ADXL_ISR() {
-  
   detachInterrupt(interruptPin);
-  adxl.ActivityINT(0);
-  adxl.setActivityXYZ(0, 0, 0);
-  flag = true;
+//  adxl.ActivityINT(0);
+//adxl.setActivityXYZ(0, 0, 0);
   // getInterruptSource clears all triggered actions after returning value
   // Do not call again until you need to recheck for triggered actions
   byte interrupts = adxl.getInterruptSource();
@@ -155,6 +153,7 @@ void ADXL_ISR() {
   if (adxl.triggered(interrupts, ADXL345_ACTIVITY)) {
     Serial.println("*** ACTIVITY ***");
     //add code here to do when activity is sensed
+    flag = true;
   }
 
   // Double Tap Detection
