@@ -293,6 +293,7 @@ void initFlash(int pktcnt) {
         break;
     }
   }
+  Serial.println("all data in flash was erased successly."); 
   pkt_num = 0;
 }
 
@@ -614,7 +615,7 @@ void writePacketToFlash() {
       initFlash(pkt_num-1);
       pkt_num=0;
       accel_data_store0.write(EEPROMpkt);
-      
+      break;
   }
 
   Serial.println("Flash Writing Process Success.");
