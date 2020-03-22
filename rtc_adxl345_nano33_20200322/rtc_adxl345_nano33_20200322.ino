@@ -2,7 +2,7 @@
 #include <WiFiUdp.h>
 //#include "SparkFunLSM6DS3.h"
 #include "Wire.h"
-#include <SPI.h>
+//#include <SPI.h>
 //#include <time.h>
 #include <ArduinoLowPower.h>
 #include <SparkFun_ADXL345.h>
@@ -12,23 +12,40 @@
 #include "secrets.h"
 
 /*
- * accelerometer data calculation value 
- */
+   accelerometer
+*/
 #define DEFINE_ACCEL 3.0
 #define SAMPLING_NUM 20.0
 
+typedef struct {
+  float avg_svg;
+  float svg_max;
+} AccelData;
+
+float base_accx, base_accy, base_accz;
+
+void calibAccel();
+void calculAccel(AccelData& accel);
+
+
 /*
- * Wifi connection value
- */
+   Wifi connection & RTC
+*/
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 int keyIndex = 0;
 WiFiClient client;
 int status = WL_IDLE_STATUS;
+unsigned long GMT = 9 * 60 * 60; //gap seconds between (seoul,South Korea) and GMT
+
+void printWiFiStatus();
+void resetEpoch();
+void printEpoch();
+void print2digits(int number);
 
 /*
- * ThingSpeak value
- */
+   ThingSpeak 
+*/
 unsigned long myChannelNumber = SECRET_CH_ID;
 const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
 
@@ -38,31 +55,30 @@ float number2 = 0;
 int number3 = 0;
 String myStatus = "";
 
-unsigned long GMT = 9 * 60 * 60; //gap seconds between (seoul,South Korea) and GMT
-const int pin = 2;  //accelerometer activity-wake up interrupt generation pin
-
 //accelerometer
-// LSM6DS3Core myIMU(I2C_MODE,0x6B);  
+// LSM6DS3Core myIMU(I2C_MODE,0x6B);
 ADXL345 adxl = ADXL345();   //I2C
 //ADXL345 adxl = ADXL345(3);  // SPI
 
+const int pin = 2;  //accelerometer activity-wake up interrupt pin
+
 /*
- * interrupt flag (time to sending data flag, accel activity occur flag, alarm mode(vehicle active-state) flag )   
- */
+   interrupt flag (time to sending data flag, accel activity occur flag, alarm mode(vehicle active-state) flag )
+*/
 volatile bool time_flag = false;  //24 o'clock RTC wake up interrupt flag (for sending data)
 volatile bool accel_flag = false; //accelerometer activity-wake up interrupt flag
 //volatile bool inact_flag = false;
-volatile bool setActiveAlarm_flag = false;  //vehicle active-state flag 
+volatile bool setActiveAlarm_flag = false;  //vehicle active-state flag
 
 
 /*
- * for read * write data to flash
- */
+   for read & write data to flash
+*/
 
 //for checking data packet contains
 char buf[64];
 
-//member of packet(time activity occured) 
+//member of packet(time activity occured)
 typedef struct timestamp {
   int g_day, g_month, g_year, g_hours, g_minutes, g_seconds;
 } timestamp;
@@ -77,7 +93,7 @@ typedef struct EEPROMpacket {
 //instance for read & write packet to flash and number of written packet
 EEPROMpacket EEPROMpkt;
 EEPROMpacket writtenPacket[48];
-volatile int pkt_num;
+int pkt_num;
 
 FlashStorage(accel_data_store0, EEPROMpacket);
 FlashStorage(accel_data_store1, EEPROMpacket);
@@ -127,6 +143,104 @@ FlashStorage(accel_data_store44, EEPROMpacket);
 FlashStorage(accel_data_store45, EEPROMpacket);
 FlashStorage(accel_data_store46, EEPROMpacket);
 FlashStorage(accel_data_store47, EEPROMpacket);
+
+
+void sendThingSpeak(int number);
+void initFlash(int pktcnt);
+int readPacketFromFlash();
+void writePacketToFlash();
+void packetMake(float svg_max, float avg_svg);
+void getHighActiveTime();
+
+
+/***********************function definition ******************************/
+
+/*
+   for accelerometer calibration, calculation
+*/
+
+void calibAccel() {
+  int x, y, z;
+  uint32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
+
+  for (int i = 0; i < 10; i++) {
+    adxl.readAccel(&x, &y, &z);
+    sumAcX += x;
+    sumAcY += y;
+    sumAcZ += z;
+    delay(10);
+  }
+
+  base_accx = sumAcX / 10;
+  base_accy = sumAcY / 10;
+  base_accz = sumAcZ / 10;
+
+
+  //  for debugging
+  Serial.print("base_accx :");
+  Serial.println(base_accx);
+  Serial.print("base_accy :");
+  Serial.println(base_accy);
+  Serial.print("base_accz :");
+  Serial.println(base_accz);
+
+}
+
+void calculAccel(AccelData& accel) {
+  calibAccel();
+  int x, y, z;
+  float cal_x = 0, cal_y = 0, cal_z = 0;
+
+  uint32_t total_svg = 0;
+  float svg_acc = 0;
+  float avg_svg = 0;
+  float svg_max = 0;
+
+
+  //1.563Hz sampling
+  for (int i = 0; i < SAMPLING_NUM ; i++) {
+
+    adxl.readAccel(&x, &y, &z);
+
+    cal_x = x - base_accx;
+    cal_y = y - base_accy;
+    cal_z = z - base_accz;
+
+    svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
+
+    if (svg_acc > svg_max) {
+      svg_max = svg_acc;
+    }
+
+    total_svg += svg_acc;
+
+    // Output Results to Serial
+    /*
+          Serial.print(cal_x);
+          Serial.print(", ");
+          Serial.print(cal_y);
+          Serial.print(", ");
+          Serial.println(cal_z);
+
+          Serial.print("svg= ");
+          Serial.println(svg_acc);
+    */
+    delay(630);
+  }
+
+  avg_svg = total_svg / SAMPLING_NUM;
+
+  Serial.println("------------------");
+  Serial.print("avg_svg =");
+  Serial.println(avg_svg);
+  Serial.print("svg_max=");
+  Serial.println(svg_max);
+  Serial.println("------------------");
+
+  accel.avg_svg = avg_svg;
+  accel.svg_max = svg_max;
+}
+
 
 void sendThingSpeak(int number) {
   int j;
@@ -482,7 +596,7 @@ int readPacketFromFlash() {
   return i;
 }
 
-//write one data(acceleration & time) to flash 
+//write one data(acceleration & time) to flash
 void writePacketToFlash() {
 
   switch (pkt_num) {
@@ -644,7 +758,7 @@ void writePacketToFlash() {
   pkt_num++;
 }
 
-//make data with packet time & accel data 
+//make data with packet time & accel data
 void packetMake(float svg_max, float avg_svg) {
   getHighActiveTime();
   Serial.println("written packet time : ");
@@ -679,100 +793,6 @@ void getHighActiveTime() {
   Serial.println("Timestamp Write Success");
 }
 
-/*
- * for accelerometer calibration
- */
-typedef struct accel{
-  float avg_svg;
-  float svg_max;
-}
- 
-float base_accx, base_accy, base_accz;
-
-void calibAccel() {
-  int x, y, z;
-  uint32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
-
-  for (int i = 0; i < 10; i++) {
-    adxl.readAccel(&x, &y, &z);
-    sumAcX += x;
-    sumAcY += y;
-    sumAcZ += z;
-    delay(10);
-  }
-
-  base_accx = sumAcX / 10;
-  base_accy = sumAcY / 10;
-  base_accz = sumAcZ / 10;
-
-
-  //  for debugging
-  Serial.print("base_accx :");
-  Serial.println(base_accx);
-  Serial.print("base_accy :");
-  Serial.println(base_accy);
-  Serial.print("base_accz :");
-  Serial.println(base_accz);
-
-}
-
-void determineAccel(accel *accel){
-  
-    calibAccel();
-
-    int x, y, z;
-    float cal_x = 0, cal_y = 0, cal_z = 0;
-
-    uint32_t total_svg = 0;
-    float svg_acc = 0;
-    float avg_svg = 0;
-    float svg_max = 0;
-
-
-    //1.563Hz sampling
-    for (int i = 0; i < SAMPLING_NUM ; i++) {
-
-      adxl.readAccel(&x, &y, &z);
-
-      cal_x = x - base_accx;
-      cal_y = y - base_accy;
-      cal_z = z - base_accz;
-
-      svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
-
-      if (svg_acc > svg_max) {
-        svg_max = svg_acc;
-      }
-
-      total_svg += svg_acc;
-
-      // Output Results to Serial
-      /*
-            Serial.print(cal_x);
-            Serial.print(", ");
-            Serial.print(cal_y);
-            Serial.print(", ");
-            Serial.println(cal_z);
-
-            Serial.print("svg= ");
-            Serial.println(svg_acc);
-      */
-      delay(630);
-    }
-
-    avg_svg = total_svg / SAMPLING_NUM;
-
-
-    Serial.println("------------------");
-    Serial.print("avg_svg =");
-    Serial.println(avg_svg);
-    Serial.print("svg_max=");
-    Serial.println(svg_max);
-    Serial.println("------------------");
-
-    accel.avg_svg=avg_svg;
-    accel.svg_max=svg_max;
-}
 /*****************************setup()*********************************/
 void setup() {
   while (!Serial);
@@ -805,7 +825,7 @@ void setup() {
 
   resetEpoch(); //getting present time epoch
 
-  LowPower.rtc.setAlarmMinutes(40);  //setting alarm time every hours
+  LowPower.rtc.setAlarmMinutes(00);  //setting alarm time every hours
   LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
   LowPower.rtc.attachInterrupt(onTimeFlag);  //alarm interrupt wake up setting
 
@@ -839,14 +859,6 @@ void setup() {
   adxl.doubleTapINT(0);
   adxl.singleTapINT(0);
 
-  /*
-    bool autoSleep_check=adxl.getRegisterBit(ADXL345_POWER_CTL,4);
-    if(autoSleep_check){
-    Serial.println("adxl345 auto- sleep is on");
-    }else{
-      Serial.println("adxl345 auto- sleep is off");
-    }
-  */
   LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
 
   Serial.println("mcu is going to sleep.. ");
@@ -860,14 +872,6 @@ void loop() {
   Serial.begin(9600);
   while (!Serial);
   Serial.println("wake up!! active-mode");
-  /*
-    bool autoSleep_check=adxl.getRegisterBit(ADXL345_POWER_CTL,4);
-    if(autoSleep_check){
-    Serial.println("adxl345 auto- sleep is on");
-    }else{
-    Serial.println("adxl345 auto- sleep is off");
-    }
-  */
 
   //at 24 o'clock, sending data to server via AP
   if (time_flag) {
@@ -893,20 +897,18 @@ void loop() {
     LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
   }
 
-  //if activity interrupt signal occur from adxl345, accel_flag is true 
+  //if activity interrupt signal occur from adxl345, accel_flag is true
   else if (accel_flag) {
 
     accel_flag = false;
-
-    accel accel;
-
-    determineAccel(&accel);
+    AccelData accel;
+    calculAccel(accel);
 
     //Determine whether the average accel-value is higher or lower than the reference value,
     //if lower, go "just normal mode" : 24'o clock alarm setting and waiting for activity INT
     //if higher,go "active-alarm setting mode" : every 30 minutes wake-up setting, and estimate acceleration
     if (accel.avg_svg < DEFINE_ACCEL) {
-      Serial.print(acce.avg_svg);
+      Serial.print(accel.avg_svg);
       Serial.println(" is < 3.0");
       Serial.println("just normal mode.");
       LowPower.rtc.attachInterrupt(onTimeFlag);
@@ -914,31 +916,10 @@ void loop() {
       adxl.setActivityXYZ(0, 0, 1);
       adxl.ActivityINT(1);
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-      /*
-            attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-
-            GCLK->CLKCTRL.bit.CLKEN = 0; //disable GCLK module
-            while (GCLK->STATUS.bit.SYNCBUSY);
-
-            GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK6 | GCLK_CLKCTRL_ID( GCM_EIC )) ;  //EIC clock switched on GCLK6
-            while (GCLK->STATUS.bit.SYNCBUSY);
-
-            GCLK->GENCTRL.reg = (GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_ID(6));  //source for GCLK6 is OSCULP32K
-            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
-
-            GCLK->GENCTRL.bit.RUNSTDBY = 1;  //GCLK6 run standby
-            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
-
-            EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-            EIC->WAKEUP.reg |= (1 << in);
-
-            NVMCTRL->CTRLB.bit.SLEEPPRM = NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
-      */
-
     } else {
       packetMake(accel.svg_max, accel.avg_svg);
       writePacketToFlash();
-      
+
       Serial.print(accel.avg_svg);
       Serial.println(" is > 3.0");
       Serial.println("Active 30sec alarm ON set");
@@ -949,21 +930,20 @@ void loop() {
       LowPower.rtc.attachInterrupt(onHighFlag);
 
     }
-    svg_max = 0;
-    total_svg = 0;
   }//end of accel_flag
 
+  //if vehicle is running mode, setActiveAlarm_flag is true
   else if (setActiveAlarm_flag) {
-    
-    setActiveAlarm_flag=false;
-    
-    accel accel;
-    determineAccel(&accel);
-    
+
+    setActiveAlarm_flag = false;
+
+    AccelData accel;
+    calculAccel(accel);
+
     packetMake(accel.svg_max, accel.avg_svg);
     writePacketToFlash();
     Serial.println("EEPROM Writing..");
-    
+
     if (accel.avg_svg > DEFINE_ACCEL) {
       Serial.print(accel.avg_svg);
       Serial.println(" is > 3.0");
@@ -977,7 +957,7 @@ void loop() {
 
       LowPower.rtc.detachInterrupt();
       LowPower.rtc.disableAlarm();
-      LowPower.rtc.setAlarmMinutes(40);
+      LowPower.rtc.setAlarmMinutes(00);
       LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
       LowPower.rtc.attachInterrupt(onTimeFlag);
 
@@ -985,39 +965,17 @@ void loop() {
       adxl.ActivityINT(1);
 
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-
-      /*
-            attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
-
-            GCLK->CLKCTRL.bit.CLKEN = 0; //disable GCLK module
-            while (GCLK->STATUS.bit.SYNCBUSY);
-
-            GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK6 | GCLK_CLKCTRL_ID( GCM_EIC )) ;  //EIC clock switched on GCLK6
-            while (GCLK->STATUS.bit.SYNCBUSY);
-
-            GCLK->GENCTRL.reg = (GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_ID(6));  //source for GCLK6 is OSCULP32K
-            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
-
-            GCLK->GENCTRL.bit.RUNSTDBY = 1;  //GCLK6 run standby
-            while (GCLK->STATUS.reg & GCLK_STATUS_SYNCBUSY);
-
-            EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-            EIC->WAKEUP.reg |= (1 << in);
-
-            NVMCTRL->CTRLB.bit.SLEEPPRM = NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
-      */
     }
   }//end of setActiveAlarm_flag
-  
+
   Serial.println("mcu is going to sleep.. ");
   Serial.println();
   Serial.end();
   LowPower.sleep();
 }
 
-/*
- * Interrupt & Alarm ISR 
- */
+/************************Interrupt & Alarm ISR ****************************/
+
 void onHighFlag() {
   setActiveAlarm_flag = true;
 }
@@ -1027,7 +985,6 @@ void onTimeFlag() {
   adxl.ActivityINT(0);
   adxl.setActivityXYZ(0, 0, 0);
   detachInterrupt(pin);
-
 }
 
 void onAccelFlag() {
@@ -1043,9 +1000,7 @@ void onAccelFlag() {
   }
 }
 
-/*
- * RTC getting epoch 
- */
+/************************ RTC getting WiFi epoch *************************/
 
 void resetEpoch() {
   unsigned long epoch;
