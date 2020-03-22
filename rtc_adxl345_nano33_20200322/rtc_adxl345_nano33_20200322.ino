@@ -925,8 +925,12 @@ void loop() {
       Serial.println("Active 30sec alarm ON set");
 
       LowPower.rtc.disableAlarm();
+      /*
       LowPower.rtc.setAlarmSeconds(30);
       LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_SS);
+      */
+      LowPower.setAlarmIn(30000);
+      //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
 
     }
@@ -948,6 +952,9 @@ void loop() {
       Serial.print(accel.avg_svg);
       Serial.println(" is > 3.0");
       Serial.println("and 30 sec alarm is ON constantly.");
+      LowPower.setAlarmIn(30000);
+      //LowPower.rtc.begin(false);
+      LowPower.rtc.attachInterrupt(onHighFlag);
     }
     else {
       Serial.print(accel.avg_svg);
