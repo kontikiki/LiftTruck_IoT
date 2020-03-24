@@ -17,6 +17,13 @@
 #define DEFINE_ACCEL 3.0
 #define SAMPLING_NUM 20.0
 
+//accelerometer
+// LSM6DS3Core myIMU(I2C_MODE,0x6B);
+ADXL345 adxl = ADXL345();   //I2C
+//ADXL345 adxl = ADXL345(3);  // SPI
+
+const int pin = 2;  //accelerometer activity-wake up interrupt pin
+
 typedef struct {
   float avg_svg;
   float svg_max;
@@ -54,13 +61,6 @@ float number1 = 0;
 float number2 = 0;
 int number3 = 0;
 String myStatus = "";
-
-//accelerometer
-// LSM6DS3Core myIMU(I2C_MODE,0x6B);
-ADXL345 adxl = ADXL345();   //I2C
-//ADXL345 adxl = ADXL345(3);  // SPI
-
-const int pin = 2;  //accelerometer activity-wake up interrupt pin
 
 /*
    interrupt flag (time to sending data flag, accel activity occur flag, alarm mode(vehicle active-state) flag )
