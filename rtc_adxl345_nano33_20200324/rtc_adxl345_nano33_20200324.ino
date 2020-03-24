@@ -51,7 +51,7 @@ void printEpoch();
 void print2digits(int number);
 
 /*
-   ThingSpeak 
+   ThingSpeak
 */
 unsigned long myChannelNumber = SECRET_CH_ID;
 const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
@@ -248,8 +248,8 @@ void calculAccel(AccelData& accel) {
 void sendThingSpeak(int number) {
   int j;
   for (j = 0; j < number; j++) {
-    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f\n", writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_year, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds, writtenPacket[j].svg_max, writtenPacket[j].avg_svg);
-    Serial.print(buf);
+    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f", writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_year, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds, writtenPacket[j].svg_max, writtenPacket[j].avg_svg);
+    Serial.println(buf);
     myStatus = String(buf);
 
     number1 = writtenPacket[j].svg_max;
@@ -263,14 +263,25 @@ void sendThingSpeak(int number) {
     ThingSpeak.setStatus(myStatus);
 
     Serial.println("ThingSpeak ready OK.");
-    int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
-    if (x == 200) {
-      Serial.println("Channel update successful.");
-    }
-    else {
-      Serial.println("Problem updating channel. HTTP error code ");
-    }
 
+    int i,x;
+    for(i=0;x!=200 && i<10 ;i++){
+      x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+      if (x == 200) {
+        Serial.println("Channel update successful.");
+      }
+      else {
+        Serial.println("Problem updating channel. HTTP error code ");
+      }
+    }
+    if(i>9){
+      Serial.print(j);
+      Serial.println("-th packet update failed.");
+    }else{
+      Serial.print(j);
+      Serial.println("-th packet update success.");
+    }
+    i=0;
     Serial.println();
     delay(20000);
 
@@ -589,8 +600,8 @@ int readPacketFromFlash() {
 
     Serial.print("read packet number: ");
     Serial.println(writtenPacket[i].num);
-    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f\n", writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_year, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].svg_max, writtenPacket[i].avg_svg);
-    Serial.print(buf);
+    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f", writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_year, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].svg_max, writtenPacket[i].avg_svg);
+    Serial.println(buf);
     i++;
   }
 
@@ -829,7 +840,7 @@ void setup() {
 
   resetEpoch(); //getting present time epoch
 
-  LowPower.rtc.setAlarmMinutes(30);  //setting alarm time every hours
+  LowPower.rtc.setAlarmMinutes(00);  //setting alarm time every hours
   LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
   LowPower.rtc.attachInterrupt(onTimeFlag);  //alarm interrupt wake up setting
 
@@ -930,8 +941,8 @@ void loop() {
 
       LowPower.rtc.disableAlarm();
       /*
-      LowPower.rtc.setAlarmSeconds(30);
-      LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_SS);
+        LowPower.rtc.setAlarmSeconds(30);
+        LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_SS);
       */
       LowPower.setAlarmIn(30000);
       //LowPower.rtc.begin(false);
@@ -950,8 +961,7 @@ void loop() {
 
     packetMake(accel.svg_max, accel.avg_svg);
     writePacketToFlash();
-    Serial.println("EEPROM Writing..");
-
+    
     if (accel.avg_svg > DEFINE_ACCEL) {
       Serial.print(accel.avg_svg);
       Serial.println(" is > 3.0");
@@ -968,7 +978,7 @@ void loop() {
 
       LowPower.rtc.detachInterrupt();
       LowPower.rtc.disableAlarm();
-      LowPower.rtc.setAlarmMinutes(30);
+      LowPower.rtc.setAlarmMinutes(00);
       LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
       LowPower.rtc.attachInterrupt(onTimeFlag);
 
@@ -1022,7 +1032,9 @@ void resetEpoch() {
   } while ((epoch == 0) && (numberOfTries < maxTries));
 
   if (numberOfTries == maxTries) {
-    Serial.print("NTP unreachable!");
+    Serial.println("NTP unreachable!");
+    Serial.println("System reset.");
+    NVIC_SystemReset();
   } else {
     Serial.print("Epoch received : ");
     Serial.println(epoch);
