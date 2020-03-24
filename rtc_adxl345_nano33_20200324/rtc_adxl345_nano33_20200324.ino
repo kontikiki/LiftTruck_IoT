@@ -14,8 +14,17 @@
 /*
    accelerometer
 */
-#define DEFINE_ACCEL 3.0
-#define SAMPLING_NUM 20.0
+#define SERIAL_BAUDRATE 115200  //serial baud rate
+#define DEFINE_ACCEL 3.0  //active alarm mode condition
+#define SAMPLING_NUM 20.0 // number of sampling
+#define CALIB_DELAY 10  //calibration sampling timing
+#define ACCEL_DELAY 640 //measurement sampling timing
+#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
+#define ALARM_TIMING 10000  //vehicle active mode measure-alarm timing(millis-debug-)
+//accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
+#define ACCEL_RATE 100  //accelerometer data rate setting value
+#define ACCEL_RANGE 8 //accelerometer range setting value
+#define ACT_THRESHOLD 75  //accelerometer activity occur threshold
 
 //accelerometer
 // LSM6DS3Core myIMU(I2C_MODE,0x6B);
@@ -171,7 +180,7 @@ void calibAccel() {
     sumAcX += x;
     sumAcY += y;
     sumAcZ += z;
-    delay(10);
+    delay(CALIB_DELAY);
   }
 
   base_accx = sumAcX / 10;
@@ -228,7 +237,7 @@ void calculAccel(AccelData& accel) {
           Serial.print("svg= ");
           Serial.println(svg_acc);
     */
-    delay(630);
+    delay(ACCEL_DELAY);
   }
 
   avg_svg = total_svg / SAMPLING_NUM;
@@ -811,7 +820,7 @@ void getHighActiveTime() {
 /*****************************setup()*********************************/
 void setup() {
   while (!Serial);
-  Serial.begin(9600);
+  Serial.begin(SERIAL_BAUDRATE);
   pinMode(pin, INPUT_PULLUP);
 
   pkt_num = 0;
@@ -840,7 +849,7 @@ void setup() {
 
   resetEpoch(); //getting present time epoch
 
-  LowPower.rtc.setAlarmMinutes(00);  //setting alarm time every hours
+  LowPower.rtc.setAlarmMinutes(SERVER_TIME);  //setting alarm time every hours
   LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
   LowPower.rtc.attachInterrupt(onTimeFlag);  //alarm interrupt wake up setting
 
@@ -851,12 +860,12 @@ void setup() {
   //adxl.writeTo(ADXL345_POWER_CTL, 24);  //auto sleep mode, measure state
   //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
-  adxl.setRangeSetting(8);  // range settings : Accepted values are 2g, 4g, 8g or 16g
-  adxl.setRate(1.563);  // data rate setting : 1.563 Hz
+  adxl.setRangeSetting(ACCEL_RANGE);  // range settings : Accepted values are 2g, 4g, 8g or 16g
+  adxl.setRate(ACCEL_RATE);  // data rate setting : 1.563 Hz
   //adxl.setSpiBit(1);
 
   adxl.setActivityXYZ(0, 0, 1); // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
-  adxl.setActivityThreshold(75);  // 62.5mg per increment   // Set activity   // activity thresholds (0-255)
+  adxl.setActivityThreshold(ACT_THRESHOLD);  // 62.5mg per increment   // Set activity   // activity thresholds (0-255)
 
   adxl.setInactivityXYZ(0, 0, 0);     // Set to detect inactivity in all the axes "adxl.setInactivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
 
@@ -914,7 +923,7 @@ void loop() {
 
   //if activity interrupt signal occur from adxl345, accel_flag is true
   else if (accel_flag) {
-
+    delay(ACCEL_DELAY);
     accel_flag = false;
     AccelData accel;
     calculAccel(accel);
@@ -944,7 +953,7 @@ void loop() {
         LowPower.rtc.setAlarmSeconds(30);
         LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_SS);
       */
-      LowPower.setAlarmIn(30000);
+      LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
 
@@ -953,7 +962,7 @@ void loop() {
 
   //if vehicle is running mode, setActiveAlarm_flag is true
   else if (setActiveAlarm_flag) {
-
+    delay(ACCEL_DELAY);
     setActiveAlarm_flag = false;
 
     AccelData accel;
@@ -966,7 +975,7 @@ void loop() {
       Serial.print(accel.avg_svg);
       Serial.println(" is > 3.0");
       Serial.println("and 30 sec alarm is ON constantly.");
-      LowPower.setAlarmIn(30000);
+      LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
     }
@@ -978,7 +987,7 @@ void loop() {
 
       LowPower.rtc.detachInterrupt();
       LowPower.rtc.disableAlarm();
-      LowPower.rtc.setAlarmMinutes(00);
+      LowPower.rtc.setAlarmMinutes(SERVER_TIME);
       LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
       LowPower.rtc.attachInterrupt(onTimeFlag);
 
