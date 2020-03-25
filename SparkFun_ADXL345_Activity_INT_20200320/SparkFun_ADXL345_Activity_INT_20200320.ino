@@ -31,6 +31,100 @@ ADXL345 adxl = ADXL345();             // USE FOR I2C COMMUNICATION
 int interruptPin = 2;                 // Setup pin 2 to be the interrupt pin (for most Arduino Boards)
 volatile bool flag;
 
+typedef struct {
+  float avg_svg;
+  float svg_max;
+} AccelData;
+
+float base_accx, base_accy, base_accz;
+
+void calibAccel() {
+  int x, y, z;
+  int32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
+
+  for (int i = 0; i < 10; i++) {
+    adxl.readAccel(&x, &y, &z);
+    Serial.print(x);
+  Serial.print(", ");
+  Serial.print(y);
+  Serial.print(", ");
+  Serial.println(z);
+    sumAcX += x;
+    sumAcY += y;
+    sumAcZ += z;
+    delay(640);
+  }
+
+  base_accx = sumAcX / 10;
+  base_accy = sumAcY / 10;
+  base_accz = sumAcZ / 10;
+
+
+  //  for debugging
+  Serial.print("base_accx :");
+  Serial.println(base_accx);
+  Serial.print("base_accy :");
+  Serial.println(base_accy);
+  Serial.print("base_accz :");
+  Serial.println(base_accz);
+
+}
+
+void calculAccel(AccelData& accel) {
+  calibAccel();
+  int x, y, z;
+  float cal_x = 0, cal_y = 0, cal_z = 0;
+
+  uint32_t total_svg = 0;
+  float svg_acc = 0;
+  float avg_svg = 0;
+  float svg_max = 0;
+
+
+  //1.563Hz sampling
+  for (int i = 0; i < 20 ; i++) {
+
+    adxl.readAccel(&x, &y, &z);
+
+    cal_x = x - base_accx;
+    cal_y = y - base_accy;
+    cal_z = z - base_accz;
+
+    svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
+
+    if (svg_acc > svg_max) {
+      svg_max = svg_acc;
+    }
+
+    total_svg += svg_acc;
+
+    // Output Results to Serial
+    /*
+          Serial.print(cal_x);
+          Serial.print(", ");
+          Serial.print(cal_y);
+          Serial.print(", ");
+          Serial.println(cal_z);
+
+          Serial.print("svg= ");
+          Serial.println(svg_acc);
+    */
+    delay(640);
+  }
+
+  avg_svg = total_svg / 20.0;
+
+  Serial.println("------------------");
+  Serial.print("avg_svg =");
+  Serial.println(avg_svg);
+  Serial.print("svg_max=");
+  Serial.println(svg_max);
+  Serial.println("------------------");
+
+  accel.avg_svg = avg_svg;
+  accel.svg_max = svg_max;
+}
+
 /******************** SETUP ********************/
 /*          Configure ADXL345 Settings         */
 void setup() {
@@ -41,6 +135,7 @@ void setup() {
   flag = false;
   pinMode(interruptPin, INPUT_PULLUP);
 
+  delayMicroseconds(1100);
 
   adxl.powerOn();                     // Power on the ADXL345
 
@@ -48,7 +143,7 @@ void setup() {
   // Accepted values are 2g, 4g, 8g or 16g
   // Higher Values = Wider Measurement Range
   // Lower Values = Greater Sensitivity
-  adxl.setRate(3.125);
+  adxl.setRate(1.563);
   // adxl.setSpiBit(0);                  // Configure the device to be in 4 wire SPI mode when set to '0' or 3 wire SPI mode when set to 1
   // Default: Set to 1
   // SPI pins on the ATMega328: 11, 12 and 13 as reference in SPI Library
@@ -94,7 +189,7 @@ void loop() {
   
   if(flag){
   // Accelerometer Readings
-
+/*
   bool bit_state=adxl.getRegisterBit(ADXL345_FIFO_CTL,5);
   Serial.print("FIFO Triggered INT (0 -> INT1, 1-> INT2) : ");
   Serial.println(bit_state);
@@ -108,18 +203,24 @@ void loop() {
  Serial.print("FIFO Status bit(1 -> occur, 0 -> not yet) : ");
  bit_state=adxl.getRegisterBit(ADXL345_FIFO_STATUS,7);
  Serial.println(bit_state);
- 
+ */
+ flag = false;
+ delay(640);
+  AccelData accel;
+    calculAccel(accel);
+ /*
   int x, y, z;
   adxl.readAccel(&x, &y, &z);         // Read the accelerometer values and store them in variables declared above x,y,z
 
   // Output Results to Serial
-  /* UNCOMMENT TO VIEW X Y Z ACCELEROMETER VALUES */
+  
   Serial.print(x);
   Serial.print(", ");
   Serial.print(y);
   Serial.print(", ");
   Serial.println(z);
-  flag = false;
+  */
+  
 //  adxl.ActivityINT(1);
 //  adxl.setActivityXYZ(0, 0, 1);
   attachInterrupt(digitalPinToInterrupt(interruptPin), ADXL_ISR, FALLING);

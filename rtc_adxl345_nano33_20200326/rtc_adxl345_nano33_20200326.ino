@@ -22,7 +22,7 @@
 #define SAMPLING_NUM 20.0 // number of sampling
 #define CALIB_DELAY 10  //calibration sampling timing
 #define ACCEL_DELAY 640 //measurement sampling timing
-#define DEFINE_ACCEL 3.0  //active alarm mode condition
+#define DEFINE_ACCEL 30.0  //active alarm mode condition
 
 /*
    accelerometer
@@ -201,9 +201,9 @@ void calibAccel() {
 void calculAccel(AccelData& accel) {
   calibAccel();
   int x, y, z;
-  float cal_x = 0, cal_y = 0, cal_z = 0;
+  float cal_x, cal_y, cal_z;
 
-  uint32_t total_svg = 0;
+  float total_svg = 0;
   float svg_acc = 0;
   float avg_svg = 0;
   float svg_max = 0;
@@ -216,20 +216,14 @@ void calculAccel(AccelData& accel) {
 
     adxl.readAccel(&x, &y, &z);
 
-    cal_x = x - base_accx;
-    cal_y = y - base_accy;
-    cal_z = z - base_accz;
+    cal_x = (float)x - base_accx;
+    cal_y = (float)y - base_accy;
+    cal_z = (float)z - base_accz;
 
     svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
 
-    if (svg_acc > svg_max) {
-      svg_max = svg_acc;
-    }
-
-    total_svg += svg_acc;
-
     // Output Results to Serial
-    /*
+    
           Serial.print(cal_x);
           Serial.print(", ");
           Serial.print(cal_y);
@@ -238,7 +232,14 @@ void calculAccel(AccelData& accel) {
 
           Serial.print("svg= ");
           Serial.println(svg_acc);
-    */
+    
+    
+    if (svg_acc > svg_max) {
+      svg_max = svg_acc;
+    }
+
+    total_svg += svg_acc;
+    
     delay(ACCEL_DELAY);
   }
 
@@ -935,7 +936,8 @@ void loop() {
     //if higher,go "active-alarm setting mode" : every 30 minutes wake-up setting, and estimate acceleration
     if (accel.avg_svg < DEFINE_ACCEL) {
       Serial.print(accel.avg_svg);
-      Serial.println(" is < 3.0");
+      Serial.print(" is < ");
+      Serial.println(DEFINE_ACCEL);
       Serial.println("just normal mode.");
       LowPower.rtc.attachInterrupt(onTimeFlag);
 
@@ -947,7 +949,8 @@ void loop() {
       writePacketToFlash();
 
       Serial.print(accel.avg_svg);
-      Serial.println(" is > 3.0");
+      Serial.print(" is > ");
+      Serial.println(DEFINE_ACCEL);
       Serial.println("Active 30sec alarm ON set");
 
       LowPower.rtc.disableAlarm();
@@ -975,7 +978,8 @@ void loop() {
     
     if (accel.avg_svg > DEFINE_ACCEL) {
       Serial.print(accel.avg_svg);
-      Serial.println(" is > 3.0");
+      Serial.print(" is > ");
+      Serial.println(DEFINE_ACCEL);
       Serial.println("and 30 sec alarm is ON constantly.");
       LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
@@ -983,7 +987,8 @@ void loop() {
     }
     else {
       Serial.print(accel.avg_svg);
-      Serial.println(" is < 3.0");
+      Serial.println(" is < ");
+      Serial.println(DEFINE_ACCEL);
       Serial.println("Last written.");
       Serial.println("and alarm OFF set.");
 
