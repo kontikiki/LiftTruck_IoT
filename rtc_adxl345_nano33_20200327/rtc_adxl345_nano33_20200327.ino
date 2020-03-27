@@ -12,8 +12,8 @@
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
-#define ALARM_TIMING 10000  //vehicle active mode measure-alarm timing(millis-debug-)
+#define SERVER_TIME 30  //ThingSpeak sending time(minute-debug-)
+#define ALARM_TIMING 20000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 8 //accelerometer range setting value
 #define ACT_THRESHOLD 75  //accelerometer activity occur threshold
 //accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
@@ -22,7 +22,7 @@
 #define SAMPLING_NUM 20.0 // number of sampling
 #define CALIB_DELAY 640  //calibration sampling timing
 #define ACCEL_DELAY 640 //measurement sampling timing
-#define DEFINE_ACCEL 30.0  //active alarm mode condition
+#define DEFINE_ACCEL 10.0  //active alarm mode condition
 
 /*
    accelerometer
@@ -32,6 +32,7 @@ ADXL345 adxl = ADXL345();   //I2C
 //ADXL345 adxl = ADXL345(3);  // SPI
 
 const int pin = 15;  //accelerometer activity-wake up interrupt pin
+//cosnt int bat=
 
 typedef struct {
   float avg_svg;
@@ -64,15 +65,21 @@ void print2digits(int number);
 */
 unsigned long myChannelNumber = SECRET_CH_ID;
 const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
+
 #ifndef PRINT_DEBUG_MESSAGES
 #define PRINT_DEBUG_MESSAGES
 #endif
 
 // Initialize ThingSpeak values
-float number1 = 0;
-float number2 = 0;
-int number3 = 0;
-String myStatus = "";
+/*
+  float number1 = 0;
+  float number2 = 0;
+  int number3 = 0;
+*/
+int number1 = 0;
+int number2 = 0;
+//String myStatus = "";
+String timeStamp = "";
 
 /*
    for read & write data to flash
@@ -88,8 +95,11 @@ typedef struct timestamp {
 
 typedef struct EEPROMpacket {
   timestamp active_time;
-  float svg_max;
-  float avg_svg;
+  /*
+    float svg_max;
+    float avg_svg;
+  */
+  int active;
   int num;
 } EEPROMpacket;
 
@@ -152,7 +162,8 @@ void sendThingSpeak(int number);
 void initFlash(int pktcnt);
 int readPacketFromFlash();
 void writePacketToFlash();
-void packetMake(float svg_max, float avg_svg);
+//void packetMake(float svg_max, float avg_svg);
+void packetMake(int active);
 void getHighActiveTime();
 
 /*
@@ -199,7 +210,7 @@ void calibAccel() {
 }
 
 void calculAccel(AccelData& accel) {
- // calibAccel();
+  // calibAccel();
   int x, y, z;
   float cal_x, cal_y, cal_z;
 
@@ -222,24 +233,25 @@ void calculAccel(AccelData& accel) {
 
     svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
 
-    // Output Results to Serial
-    
-          Serial.print(cal_x);
-          Serial.print(", ");
-          Serial.print(cal_y);
-          Serial.print(", ");
-          Serial.println(cal_z);
 
-          Serial.print("svg= ");
-          Serial.println(svg_acc);
-    
-    
+    // Output Results to Serial
+
+    Serial.print(cal_x);
+    Serial.print(", ");
+    Serial.print(cal_y);
+    Serial.print(", ");
+    Serial.println(cal_z);
+
+    Serial.print("svg= ");
+    Serial.println(svg_acc);
+
+
     if (svg_acc > svg_max) {
       svg_max = svg_acc;
     }
 
     total_svg += svg_acc;
-    
+
     delay(ACCEL_DELAY);
   }
 
@@ -256,28 +268,65 @@ void calculAccel(AccelData& accel) {
   accel.svg_max = svg_max;
 }
 
+void sendThingSpeakOnce(int active, int num) {
+  int i, x;
+  number1 = active;
+  number2 = num;
+
+  ThingSpeak.setField(1, number1);
+  ThingSpeak.setField(2, number2);
+
+  Serial.println("ThingSpeak ready OK.");
+
+  for (i = 0; x != 200 && i < 10 ; i++) {
+    x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    if (x == 200) {
+      Serial.println("Channel update successful.");
+    }
+    else {
+      Serial.println("Problem updating channel. HTTP error code ");
+    }
+  }
+  if (i > 9) {
+    Serial.println("packet update failed.");
+  } else {
+    Serial.println("packet update success.");
+  }
+  Serial.println();
+}
 
 void sendThingSpeak(int number) {
-  int j;
+  int i, j, x, y;
   for (j = 0; j < number; j++) {
-    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f", writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_year, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds, writtenPacket[j].svg_max, writtenPacket[j].avg_svg);
+    //ex> "2017-01-12 13:22:54"
+    sprintf(buf, "%d-%d-%d %d:%d:%d", 2000 + (writtenPacket[j].active_time.g_year), writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds);
     Serial.println(buf);
-    myStatus = String(buf);
-
-    number1 = writtenPacket[j].svg_max;
-    number2 = writtenPacket[j].avg_svg;
-    number3 = writtenPacket[j].num;
+    timeStamp = String(buf);
+    /*
+        number1 = writtenPacket[j].svg_max;
+        number2 = writtenPacket[j].avg_svg;
+        number3 = writtenPacket[j].num;
+    */
+    number1 = writtenPacket[j].active;
+    number2 = writtenPacket[j].num;
 
     ThingSpeak.setField(1, number1);
     ThingSpeak.setField(2, number2);
-    ThingSpeak.setField(3, number3);
+    //    ThingSpeak.setField(3, number3);
+    ThingSpeak.setStatus(timeStamp);
 
-    ThingSpeak.setStatus(myStatus);
+    /*
+        y = ThingSpeak.setCreatedAt(timeStamp);
 
+        if (y == 200) {
+          Serial.println("Timestamp setting OK.");
+        } else {
+          Serial.println("Timestampis too long, or other error.");
+        }
+    */
     Serial.println("ThingSpeak ready OK.");
 
-    int i,x;
-    for(i=0;x!=200 && i<10 ;i++){
+    for (i = 0; x != 200 && i < 10 ; i++) {
       x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
       if (x == 200) {
         Serial.println("Channel update successful.");
@@ -286,16 +335,17 @@ void sendThingSpeak(int number) {
         Serial.println("Problem updating channel. HTTP error code ");
       }
     }
-    if(i>9){
+    if (i > 9) {
       Serial.print(j);
       Serial.println("-th packet update failed.");
-    }else{
+    } else {
       Serial.print(j);
       Serial.println("-th packet update success.");
     }
-    i=0;
+    i = 0;
     Serial.println();
-    delay(20000);
+    memset(buf, 0, sizeof(buf));
+    delay(20000); //thingSpeak free update time gap
 
   }
   Serial.println("all data are sent to thingSpeak channel.");
@@ -612,7 +662,7 @@ int readPacketFromFlash() {
 
     Serial.print("read packet number: ");
     Serial.println(writtenPacket[i].num);
-    sprintf(buf, "%d/%d/%d/%d:%d:%d,max_svg: %0.2f avg_svg: %0.2f", writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_year, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].svg_max, writtenPacket[i].avg_svg);
+    sprintf(buf, "%d-%d-%d %d:%d:%d vehicle state :%d", 2000 + (writtenPacket[i].active_time.g_year), writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].active);
     Serial.println(buf);
     i++;
   }
@@ -786,7 +836,8 @@ void writePacketToFlash() {
 }
 
 //make data with packet time & accel data
-void packetMake(float svg_max, float avg_svg) {
+/*
+  void packetMake(float svg_max, float avg_svg) {
   getHighActiveTime();
   Serial.println("written packet time : ");
   Serial.println(EEPROMpkt.active_time.g_day);
@@ -804,6 +855,29 @@ void packetMake(float svg_max, float avg_svg) {
   Serial.println("written packet data : ");
   Serial.println(EEPROMpkt.svg_max);
   Serial.println(EEPROMpkt.avg_svg);
+  Serial.println(EEPROMpkt.num);
+  Serial.println("============");
+  Serial.println("Packet Make Success");
+  }
+*/
+void packetMake(int active) {
+  getHighActiveTime();
+  /*
+    Serial.println("written packet time : ");
+    Serial.println(EEPROMpkt.active_time.g_day);
+    Serial.println(EEPROMpkt.active_time.g_month);
+    Serial.println(EEPROMpkt.active_time.g_year);
+    Serial.println(EEPROMpkt.active_time.g_hours);
+    Serial.println(EEPROMpkt.active_time.g_minutes);
+    Serial.println(EEPROMpkt.active_time.g_seconds);
+  */
+  Serial.println("------------------");
+  EEPROMpkt.active = active;
+  EEPROMpkt.num = pkt_num;
+
+
+  Serial.println("written packet data : ");
+  Serial.println(EEPROMpkt.active);
   Serial.println(EEPROMpkt.num);
   Serial.println("============");
   Serial.println("Packet Make Success");
@@ -845,7 +919,6 @@ void setup() {
   }
 
   printWiFiStatus();
-
   ThingSpeak.begin(client);
 
   LowPower.rtc.begin();
@@ -864,7 +937,7 @@ void setup() {
   //adxl.writeTo(0x2E,0x00); //enable DATA_READY Interrupt
 
   adxl.setRangeSetting(ACCEL_RANGE);  // range settings : Accepted values are 2g, 4g, 8g or 16g
-//  adxl.setRate(ACCEL_RATE);  // data rate setting : 1.563 Hz
+  //  adxl.setRate(ACCEL_RATE);  // data rate setting : 1.563 Hz
   //adxl.setSpiBit(1);
 
   adxl.setActivityXYZ(1, 1, 1); // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
@@ -927,15 +1000,20 @@ void loop() {
 
   //if activity interrupt signal occur from adxl345, accel_flag is true
   else if (accel_flag) {
-    
+
     accel_flag = false;
     AccelData accel;
     calculAccel(accel);
+    //  packetMake(accel.svg_max, accel.avg_svg);
+    //  writePacketToFlash();
 
     //Determine whether the average accel-value is higher or lower than the reference value,
     //if lower, go "just normal mode" : 24'o clock alarm setting and waiting for activity INT
     //if higher,go "active-alarm setting mode" : every 30 minutes wake-up setting, and estimate acceleration
     if (accel.avg_svg < DEFINE_ACCEL) {
+      sendThingSpeakOnce(0, pkt_num);
+      packetMake(0);
+      writePacketToFlash();
       Serial.print(accel.avg_svg);
       Serial.print(" is < ");
       Serial.println(DEFINE_ACCEL);
@@ -946,13 +1024,16 @@ void loop() {
       adxl.ActivityINT(1);
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
     } else {
-      packetMake(accel.svg_max, accel.avg_svg);
+      sendThingSpeakOnce(1, pkt_num);
+      packetMake(1);
       writePacketToFlash();
 
       Serial.print(accel.avg_svg);
       Serial.print(" is > ");
       Serial.println(DEFINE_ACCEL);
-      Serial.println("Active 30sec alarm ON set");
+      Serial.print("Active ");
+      Serial.print(ALARM_TIMING / 1000);
+      Serial.println("sec alarm ON set");
 
       LowPower.rtc.disableAlarm();
       /*
@@ -968,25 +1049,33 @@ void loop() {
 
   //if vehicle is running mode, setActiveAlarm_flag is true
   else if (setActiveAlarm_flag) {
-    
+
     setActiveAlarm_flag = false;
-    
+
     AccelData accel;
     calculAccel(accel);
 
-    packetMake(accel.svg_max, accel.avg_svg);
-    writePacketToFlash();
-    
+    //    packetMake(accel.svg_max, accel.avg_svg);
+    //    writePacketToFlash();
+
     if (accel.avg_svg > DEFINE_ACCEL) {
+      sendThingSpeakOnce(1, pkt_num);
+      packetMake(1);
+      writePacketToFlash();
       Serial.print(accel.avg_svg);
       Serial.print(" is > ");
       Serial.println(DEFINE_ACCEL);
-      Serial.println("and 30 sec alarm is ON constantly.");
+      Serial.print("and ");
+      Serial.print(ALARM_TIMING / 1000);
+      Serial.println("sec alarm is ON constantly.");
       LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
     }
     else {
+      sendThingSpeakOnce(0, pkt_num);
+      packetMake(0);
+      writePacketToFlash();
       Serial.print(accel.avg_svg);
       Serial.println(" is < ");
       Serial.println(DEFINE_ACCEL);
@@ -1054,9 +1143,9 @@ void resetEpoch() {
     NVIC_SystemReset();
   } else {
     Serial.print("Epoch received : ");
-    Serial.println(epoch);
-    LowPower.rtc.setEpoch(epoch + GMT);
-
+//    Serial.println(epoch);
+    LowPower.rtc.setEpoch(epoch+GMT);
+    LowPower.rtc.setEpoch(epoch);
     printEpoch();
   }
 }
@@ -1091,7 +1180,6 @@ void printEpoch() {
   Serial.print("/");
   print2digits(LowPower.rtc.getYear());
   Serial.print(" ");
-
   // ...and time
   print2digits(LowPower.rtc.getHours());
   Serial.print(":");

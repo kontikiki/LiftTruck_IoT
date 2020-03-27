@@ -22,7 +22,7 @@
 #define SAMPLING_NUM 20.0 // number of sampling
 #define CALIB_DELAY 640  //calibration sampling timing
 #define ACCEL_DELAY 640 //measurement sampling timing
-#define DEFINE_ACCEL 30.0  //active alarm mode condition
+#define DEFINE_ACCEL 10.0  //active alarm mode condition
 
 /*
    accelerometer
