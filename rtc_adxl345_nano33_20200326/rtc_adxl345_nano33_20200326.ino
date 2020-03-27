@@ -11,7 +11,7 @@
 #include <ThingSpeak.h>
 #include "secrets.h"
 
-#define SERIAL_BAUDRATE 115200  //serial baud rate
+#define SERIAL_BAUDRATE 9600  //serial baud rate
 #define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
 #define ALARM_TIMING 10000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 8 //accelerometer range setting value
@@ -31,7 +31,7 @@
 ADXL345 adxl = ADXL345();   //I2C
 //ADXL345 adxl = ADXL345(3);  // SPI
 
-const int pin = 2;  //accelerometer activity-wake up interrupt pin
+const int pin = 15;  //accelerometer activity-wake up interrupt pin
 
 typedef struct {
   float avg_svg;
@@ -186,7 +186,7 @@ void calibAccel() {
 
   base_accx = sumAcX / 10;
   base_accy = sumAcY / 10;
-  base_accz = sumAcZ / 10;
+  base_accz = sumAcZ / 10 +64.0;
 
 
   //  for debugging
@@ -896,7 +896,7 @@ void setup() {
 
 /**********************************loop()******************************/
 void loop() {
-  Serial.begin(9600);
+  Serial.begin(SERIAL_BAUDRATE);
   while (!Serial);
   Serial.println("wake up!! active-mode");
 
