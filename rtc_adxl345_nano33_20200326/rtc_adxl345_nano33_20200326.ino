@@ -12,7 +12,7 @@
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
+#define SERVER_TIME 10  //ThingSpeak sending time(minute-debug-)
 #define ALARM_TIMING 10000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 8 //accelerometer range setting value
 #define ACT_THRESHOLD 75  //accelerometer activity occur threshold
@@ -276,8 +276,9 @@ void sendThingSpeak(int number) {
 
     Serial.println("ThingSpeak ready OK.");
 
-    int i,x;
-    for(i=0;x!=200 && i<10 ;i++){
+//    int i,x;
+//    for(i=0;x!=200 && i<10 ;i++){
+int x;
       x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
       if (x == 200) {
         Serial.println("Channel update successful.");
@@ -285,6 +286,7 @@ void sendThingSpeak(int number) {
       else {
         Serial.println("Problem updating channel. HTTP error code ");
       }
+      /*
     }
     if(i>9){
       Serial.print(j);
@@ -293,7 +295,8 @@ void sendThingSpeak(int number) {
       Serial.print(j);
       Serial.println("-th packet update success.");
     }
-    i=0;
+    */
+//    i=0;
     Serial.println();
     delay(20000);
 

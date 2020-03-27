@@ -12,16 +12,14 @@
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 30  //ThingSpeak sending time(minute-debug-)
-#define ALARM_TIMING 20000  //vehicle active mode measure-alarm timing(millis-debug-)
+#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
+#define ALARM_TIMING 5000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 8 //accelerometer range setting value
 #define ACT_THRESHOLD 75  //accelerometer activity occur threshold
 //accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
 #define ACCEL_RATE 1.56  //accelerometer data rate setting value
-#define CALIB_RATE 1.56  //data rate when accel calibration
-#define SAMPLING_NUM 20.0 // number of sampling
-#define CALIB_DELAY 640  //calibration sampling timing
-#define ACCEL_DELAY 640 //measurement sampling timing
+#define SAMPLING_NUM 20.0 // number of sampling (about 12.8 s)
+#define ACCEL_DELAY 640 //measurement sampling timing for 1.56 Hz
 #define DEFINE_ACCEL 10.0  //active alarm mode condition
 
 /*
@@ -184,15 +182,15 @@ volatile bool setActiveAlarm_flag = false;  //vehicle active-state flag
 void calibAccel() {
   int x, y, z;
   int32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
-  adxl.setRate(CALIB_RATE);
-  delay(CALIB_DELAY);
+  adxl.setRate(ACCEL_RATE);
+  delay(ACCEL_DELAY);
 
   for (int i = 0; i < 10; i++) {
     adxl.readAccel(&x, &y, &z);
     sumAcX += x;
     sumAcY += y;
     sumAcZ += z;
-    delay(CALIB_DELAY);
+    delay(ACCEL_DELAY);
   }
 
   base_accx = sumAcX / 10;
@@ -219,7 +217,7 @@ void calculAccel(AccelData& accel) {
   float avg_svg = 0;
   float svg_max = 0;
 
-  adxl.setRate(ACCEL_RATE);
+//  adxl.setRate(ACCEL_RATE);
   delay(ACCEL_DELAY);
 
   //1.563Hz sampling
@@ -269,7 +267,7 @@ void calculAccel(AccelData& accel) {
 }
 
 void sendThingSpeakOnce(int active, int num) {
-  int i, x;
+  // int i;
   number1 = active;
   number2 = num;
 
@@ -278,25 +276,27 @@ void sendThingSpeakOnce(int active, int num) {
 
   Serial.println("ThingSpeak ready OK.");
 
-  for (i = 0; x != 200 && i < 10 ; i++) {
-    x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
-    if (x == 200) {
-      Serial.println("Channel update successful.");
-    }
-    else {
-      Serial.println("Problem updating channel. HTTP error code ");
-    }
+  //  for (i = 0; x != 200 && i < 10 ; i++) {
+  int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+  if (x == 200) {
+    Serial.println("Channel update successful.");
   }
-  if (i > 9) {
+  else {
+    Serial.println("Problem updating channel. HTTP error code ");
+  }
+  /*
+    }
+    if (i > 9) {
     Serial.println("packet update failed.");
-  } else {
+    } else {
     Serial.println("packet update success.");
-  }
+    }
+  */
   Serial.println();
 }
 
 void sendThingSpeak(int number) {
-  int i, j, x, y;
+  int j, x, y;
   for (j = 0; j < number; j++) {
     //ex> "2017-01-12 13:22:54"
     sprintf(buf, "%d-%d-%d %d:%d:%d", 2000 + (writtenPacket[j].active_time.g_year), writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds);
@@ -313,36 +313,39 @@ void sendThingSpeak(int number) {
     ThingSpeak.setField(1, number1);
     ThingSpeak.setField(2, number2);
     //    ThingSpeak.setField(3, number3);
-    ThingSpeak.setStatus(timeStamp);
+ //   ThingSpeak.setStatus(timeStamp);
 
-    /*
-        y = ThingSpeak.setCreatedAt(timeStamp);
 
-        if (y == 200) {
-          Serial.println("Timestamp setting OK.");
-        } else {
-          Serial.println("Timestampis too long, or other error.");
-        }
-    */
+    y = ThingSpeak.setCreatedAt(timeStamp);
+
+    if (y == 200) {
+      Serial.println("Timestamp setting OK.");
+    } else {
+      Serial.println("Timestampis too long, or other error.");
+    }
+
     Serial.println("ThingSpeak ready OK.");
 
-    for (i = 0; x != 200 && i < 10 ; i++) {
-      x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
-      if (x == 200) {
-        Serial.println("Channel update successful.");
-      }
-      else {
-        Serial.println("Problem updating channel. HTTP error code ");
-      }
+    //    for (i = 0; x != 200 && i < 10 ; i++) {
+    x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    if (x == 200) {
+      Serial.println("Channel update successful.");
     }
-    if (i > 9) {
+    else {
+      Serial.println("Problem updating channel. HTTP error code ");
+    }
+    /*
+      }
+      if (i > 9) {
       Serial.print(j);
       Serial.println("-th packet update failed.");
-    } else {
+      } else {
       Serial.print(j);
       Serial.println("-th packet update success.");
-    }
-    i = 0;
+      }
+      i = 0;
+    */
+
     Serial.println();
     memset(buf, 0, sizeof(buf));
     delay(20000); //thingSpeak free update time gap
@@ -1011,7 +1014,7 @@ void loop() {
     //if lower, go "just normal mode" : 24'o clock alarm setting and waiting for activity INT
     //if higher,go "active-alarm setting mode" : every 30 minutes wake-up setting, and estimate acceleration
     if (accel.avg_svg < DEFINE_ACCEL) {
-      sendThingSpeakOnce(0, pkt_num);
+      //sendThingSpeakOnce(0, pkt_num);
       packetMake(0);
       writePacketToFlash();
       Serial.print(accel.avg_svg);
@@ -1024,7 +1027,7 @@ void loop() {
       adxl.ActivityINT(1);
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
     } else {
-      sendThingSpeakOnce(1, pkt_num);
+      //sendThingSpeakOnce(1, pkt_num);
       packetMake(1);
       writePacketToFlash();
 
@@ -1059,7 +1062,7 @@ void loop() {
     //    writePacketToFlash();
 
     if (accel.avg_svg > DEFINE_ACCEL) {
-      sendThingSpeakOnce(1, pkt_num);
+      // sendThingSpeakOnce(1, pkt_num);
       packetMake(1);
       writePacketToFlash();
       Serial.print(accel.avg_svg);
@@ -1073,7 +1076,7 @@ void loop() {
       LowPower.rtc.attachInterrupt(onHighFlag);
     }
     else {
-      sendThingSpeakOnce(0, pkt_num);
+      // sendThingSpeakOnce(0, pkt_num);
       packetMake(0);
       writePacketToFlash();
       Serial.print(accel.avg_svg);
@@ -1143,8 +1146,8 @@ void resetEpoch() {
     NVIC_SystemReset();
   } else {
     Serial.print("Epoch received : ");
-//    Serial.println(epoch);
-    LowPower.rtc.setEpoch(epoch+GMT);
+    Serial.println(epoch);
+    //    LowPower.rtc.setEpoch(epoch + GMT);
     LowPower.rtc.setEpoch(epoch);
     printEpoch();
   }
