@@ -12,7 +12,7 @@
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
+#define SERVER_TIME 05  //ThingSpeak sending time(minute-debug-)
 #define ALARM_TIMING 5000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 8 //accelerometer range setting value
 #define ACT_THRESHOLD 75  //accelerometer activity occur threshold
@@ -21,7 +21,8 @@
 #define SAMPLING_NUM 20.0 // number of sampling (about 12.8 s)
 #define ACCEL_DELAY 640 //measurement sampling timing for 1.56 Hz
 #define DEFINE_ACCEL 10.0  //active alarm mode condition
-
+#define pin 15
+#define BAT_PIN A3
 /*
    accelerometer
 */
@@ -29,8 +30,7 @@
 ADXL345 adxl = ADXL345();   //I2C
 //ADXL345 adxl = ADXL345(3);  // SPI
 
-const int pin = 15;  //accelerometer activity-wake up interrupt pin
-//cosnt int bat=
+//const int pin = 15;  //accelerometer activity-wake up interrupt pin
 
 typedef struct {
   float avg_svg;
@@ -180,17 +180,22 @@ volatile bool setActiveAlarm_flag = false;  //vehicle active-state flag
 */
 
 void calibAccel() {
+  
   int x, y, z;
   int32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
   adxl.setRate(ACCEL_RATE);
   delay(ACCEL_DELAY);
 
   for (int i = 0; i < 10; i++) {
+    
     adxl.readAccel(&x, &y, &z);
     sumAcX += x;
     sumAcY += y;
     sumAcZ += z;
-    delay(ACCEL_DELAY);
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(ACCEL_DELAY/2);
+    digitalWrite(LED_BUILTIN,LOW);
+    delay(ACCEL_DELAY/2);
   }
 
   base_accx = sumAcX / 10;
@@ -217,12 +222,12 @@ void calculAccel(AccelData& accel) {
   float avg_svg = 0;
   float svg_max = 0;
 
-//  adxl.setRate(ACCEL_RATE);
+  //  adxl.setRate(ACCEL_RATE);
   delay(ACCEL_DELAY);
 
   //1.563Hz sampling
   for (int i = 0; i < SAMPLING_NUM ; i++) {
-
+    
     adxl.readAccel(&x, &y, &z);
 
     cal_x = (float)x - base_accx;
@@ -250,7 +255,10 @@ void calculAccel(AccelData& accel) {
 
     total_svg += svg_acc;
 
-    delay(ACCEL_DELAY);
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(ACCEL_DELAY/2);
+    digitalWrite(LED_BUILTIN,LOW);
+    delay(ACCEL_DELAY/2);
   }
 
   avg_svg = total_svg / SAMPLING_NUM;
@@ -264,6 +272,7 @@ void calculAccel(AccelData& accel) {
 
   accel.avg_svg = avg_svg;
   accel.svg_max = svg_max;
+  
 }
 
 void sendThingSpeakOnce(int active, int num) {
@@ -295,9 +304,33 @@ void sendThingSpeakOnce(int active, int num) {
   Serial.println();
 }
 
+void sendVoltageStateThingSpeak(){
+  digitalWrite(LED_BUILTIN,HIGH);
+int j, x, y;
+  int battery = readBattery();
+  float voltage = ((float)map(battery,0, 4096,0,60)) / 10.0;
+  Serial.print(" battery voltage : ");
+  Serial.println(voltage);
+  sprintf(buf, "readValue : %d, battery voltage : %0.2f V", battery,voltage);
+  String myStatus = String(buf);
+  ThingSpeak.setStatus(myStatus);
+  x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+  if (x == 200) {
+    Serial.println("Channel update successful.");
+  }
+  else {
+    Serial.println("Problem updating channel. HTTP error code ");
+  }
+  memset(buf, 0, sizeof(buf));
+  delay(20000);
+  digitalWrite(LED_BUILTIN,LOW);
+}
+
 void sendThingSpeak(int number) {
   int j, x, y;
+ 
   for (j = 0; j < number; j++) {
+    digitalWrite(LED_BUILTIN,HIGH);
     //ex> "2017-01-12 13:22:54"
     sprintf(buf, "%d-%d-%d %d:%d:%d", 2000 + (writtenPacket[j].active_time.g_year), writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds);
     Serial.println(buf);
@@ -310,10 +343,11 @@ void sendThingSpeak(int number) {
     number1 = writtenPacket[j].active;
     number2 = writtenPacket[j].num;
 
+
+
     ThingSpeak.setField(1, number1);
     ThingSpeak.setField(2, number2);
     //    ThingSpeak.setField(3, number3);
- //   ThingSpeak.setStatus(timeStamp);
 
 
     y = ThingSpeak.setCreatedAt(timeStamp);
@@ -349,7 +383,7 @@ void sendThingSpeak(int number) {
     Serial.println();
     memset(buf, 0, sizeof(buf));
     delay(20000); //thingSpeak free update time gap
-
+    digitalWrite(LED_BUILTIN,LOW);
   }
   Serial.println("all data are sent to thingSpeak channel.");
 }
@@ -897,11 +931,19 @@ void getHighActiveTime() {
   Serial.println("Timestamp Write Success");
 }
 
+int readBattery() {
+  int readValue = analogRead(BAT_PIN);
+  Serial.print("reading value is ");
+  Serial.println(readValue);
+  
+  return readValue;
+}
 /*****************************setup()*********************************/
 void setup() {
   while (!Serial);
   Serial.begin(SERIAL_BAUDRATE);
   pinMode(pin, INPUT_PULLUP);
+  pinMode(LED_BUILTIN,OUTPUT);
 
   pkt_num = 0;
 
@@ -974,15 +1016,16 @@ void setup() {
 /**********************************loop()******************************/
 void loop() {
   Serial.begin(SERIAL_BAUDRATE);
-  while (!Serial);
+//  while (!Serial);
   Serial.println("wake up!! active-mode");
 
   //at 24 o'clock, sending data to server via AP
   if (time_flag) {
     Serial.println("onTime interrupt generated!");
-    resetEpoch();
+//    resetEpoch();
     time_flag = false;
 
+    sendVoltageStateThingSpeak();
     if (pkt_num > 0) {
       int num = readPacketFromFlash();
 
@@ -1003,7 +1046,7 @@ void loop() {
 
   //if activity interrupt signal occur from adxl345, accel_flag is true
   else if (accel_flag) {
-
+    
     accel_flag = false;
     AccelData accel;
     calculAccel(accel);
@@ -1139,18 +1182,18 @@ void resetEpoch() {
     epoch = WiFi.getTime();
     numberOfTries++;
 
-     if(numberOfTries >= maxTries){
+    if (numberOfTries >= maxTries) {
       Serial.println("NTP unreachable!");
-      numberOfTries=0;
+      numberOfTries = 0;
       delay(2000);
-     }
+    }
   } while (epoch == 0);
 
-    Serial.print("Epoch received : ");
-    Serial.println(epoch);
-    //    LowPower.rtc.setEpoch(epoch + GMT);
-    LowPower.rtc.setEpoch(epoch);
-    printEpoch();
+  Serial.print("Epoch received : ");
+  Serial.println(epoch);
+  //    LowPower.rtc.setEpoch(epoch + GMT);
+  LowPower.rtc.setEpoch(epoch);
+  printEpoch();
 }
 
 void print2digits(int number) {
