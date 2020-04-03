@@ -180,22 +180,21 @@ volatile bool setActiveAlarm_flag = false;  //vehicle active-state flag
 */
 
 void calibAccel() {
-  
+
   int x, y, z;
   int32_t sumAcX = 0, sumAcY = 0, sumAcZ = 0;
   adxl.setRate(ACCEL_RATE);
   delay(ACCEL_DELAY);
-
   for (int i = 0; i < 10; i++) {
-    
+
     adxl.readAccel(&x, &y, &z);
     sumAcX += x;
     sumAcY += y;
     sumAcZ += z;
-    digitalWrite(LED_BUILTIN,HIGH);
-    delay(ACCEL_DELAY/2);
-    digitalWrite(LED_BUILTIN,LOW);
-    delay(ACCEL_DELAY/2);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(ACCEL_DELAY / 2);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(ACCEL_DELAY / 2);
   }
 
   base_accx = sumAcX / 10;
@@ -204,12 +203,12 @@ void calibAccel() {
 
 
   //  for debugging
-  Serial.print("base_accx :");
-  Serial.println(base_accx);
-  Serial.print("base_accy :");
-  Serial.println(base_accy);
-  Serial.print("base_accz :");
-  Serial.println(base_accz);
+  Serial1.print("base_accx :");
+  Serial1.println(base_accx);
+  Serial1.print("base_accy :");
+  Serial1.println(base_accy);
+  Serial1.print("base_accz :");
+  Serial1.println(base_accz);
 }
 
 void calculAccel(AccelData& accel) {
@@ -227,7 +226,7 @@ void calculAccel(AccelData& accel) {
 
   //1.563Hz sampling
   for (int i = 0; i < SAMPLING_NUM ; i++) {
-    
+
     adxl.readAccel(&x, &y, &z);
 
     cal_x = (float)x - base_accx;
@@ -239,14 +238,14 @@ void calculAccel(AccelData& accel) {
 
     // Output Results to Serial
 
-    Serial.print(cal_x);
-    Serial.print(", ");
-    Serial.print(cal_y);
-    Serial.print(", ");
-    Serial.println(cal_z);
+    Serial1.print(cal_x);
+    Serial1.print(", ");
+    Serial1.print(cal_y);
+    Serial1.print(", ");
+    Serial1.println(cal_z);
 
-    Serial.print("svg= ");
-    Serial.println(svg_acc);
+    Serial1.print("svg= ");
+    Serial1.println(svg_acc);
 
 
     if (svg_acc > svg_max) {
@@ -255,24 +254,25 @@ void calculAccel(AccelData& accel) {
 
     total_svg += svg_acc;
 
-    digitalWrite(LED_BUILTIN,HIGH);
-    delay(ACCEL_DELAY/2);
-    digitalWrite(LED_BUILTIN,LOW);
-    delay(ACCEL_DELAY/2);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(ACCEL_DELAY / 2);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(ACCEL_DELAY / 2);
   }
 
   avg_svg = total_svg / SAMPLING_NUM;
 
-  Serial.println("------------------");
-  Serial.print("avg_svg =");
-  Serial.println(avg_svg);
-  Serial.print("svg_max=");
-  Serial.println(svg_max);
-  Serial.println("------------------");
+  Serial1.println("------------------");
+  Serial1.print("avg_svg =");
+  Serial1.println(avg_svg);
+  Serial1.print("svg_max=");
+  Serial1.println(svg_max);
+  Serial1.println("------------------");
 
+  //delay(500);
   accel.avg_svg = avg_svg;
   accel.svg_max = svg_max;
-  
+
 }
 
 void sendThingSpeakOnce(int active, int num) {
@@ -283,15 +283,15 @@ void sendThingSpeakOnce(int active, int num) {
   ThingSpeak.setField(1, number1);
   ThingSpeak.setField(2, number2);
 
-  Serial.println("ThingSpeak ready OK.");
+  Serial1.println("ThingSpeak ready OK.");
 
   //  for (i = 0; x != 200 && i < 10 ; i++) {
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if (x == 200) {
-    Serial.println("Channel update successful.");
+    Serial1.println("Channel update successful.");
   }
   else {
-    Serial.println("Problem updating channel. HTTP error code ");
+    Serial1.println("Problem updating channel. HTTP error code ");
   }
   /*
     }
@@ -301,39 +301,39 @@ void sendThingSpeakOnce(int active, int num) {
     Serial.println("packet update success.");
     }
   */
-  Serial.println();
+  Serial1.println();
 }
 
-void sendVoltageStateThingSpeak(){
-  digitalWrite(LED_BUILTIN,HIGH);
-int j, x, y;
+void sendVoltageStateThingSpeak() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  int j, x, y;
   int battery = readBattery();
-  float voltage = ((float)map(battery,0, 4096,0,60)) / 10.0;
-  Serial.print(" battery voltage : ");
-  Serial.println(voltage);
-  sprintf(buf, "readValue : %d, battery voltage : %0.2f V", battery,voltage);
+  float voltage = ((float)map(battery, 0, 4096, 0, 60)) / 10.0;
+  Serial1.print(" battery voltage : ");
+  Serial1.println(voltage);
+  sprintf(buf, "readValue : %d, battery voltage : %0.2f V", battery, voltage);
   String myStatus = String(buf);
   ThingSpeak.setStatus(myStatus);
   x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if (x == 200) {
-    Serial.println("Channel update successful.");
+    Serial1.println("Channel update successful.");
   }
   else {
-    Serial.println("Problem updating channel. HTTP error code ");
+    Serial1.println("Problem updating channel. HTTP error code ");
   }
   memset(buf, 0, sizeof(buf));
   delay(20000);
-  digitalWrite(LED_BUILTIN,LOW);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void sendThingSpeak(int number) {
   int j, x, y;
- 
+
   for (j = 0; j < number; j++) {
-    digitalWrite(LED_BUILTIN,HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
     //ex> "2017-01-12 13:22:54"
     sprintf(buf, "%d-%d-%d %d:%d:%d", 2000 + (writtenPacket[j].active_time.g_year), writtenPacket[j].active_time.g_month, writtenPacket[j].active_time.g_day, writtenPacket[j].active_time.g_hours, writtenPacket[j].active_time.g_minutes, writtenPacket[j].active_time.g_seconds);
-    Serial.println(buf);
+    Serial1.println(buf);
     timeStamp = String(buf);
     /*
         number1 = writtenPacket[j].svg_max;
@@ -353,20 +353,20 @@ void sendThingSpeak(int number) {
     y = ThingSpeak.setCreatedAt(timeStamp);
 
     if (y == 200) {
-      Serial.println("Timestamp setting OK.");
+      Serial1.println("Timestamp setting OK.");
     } else {
-      Serial.println("Timestampis too long, or other error.");
+      Serial1.println("Timestamp is too long, or other error.");
     }
 
-    Serial.println("ThingSpeak ready OK.");
+    Serial1.println("ThingSpeak ready OK.");
 
     //    for (i = 0; x != 200 && i < 10 ; i++) {
     x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
     if (x == 200) {
-      Serial.println("Channel update successful.");
+      Serial1.println("Channel update successful.");
     }
     else {
-      Serial.println("Problem updating channel. HTTP error code ");
+      Serial1.println("Problem updating channel. HTTP error code ");
     }
     /*
       }
@@ -380,12 +380,12 @@ void sendThingSpeak(int number) {
       i = 0;
     */
 
-    Serial.println();
+    Serial1.println();
     memset(buf, 0, sizeof(buf));
     delay(20000); //thingSpeak free update time gap
-    digitalWrite(LED_BUILTIN,LOW);
+    digitalWrite(LED_BUILTIN, LOW);
   }
-  Serial.println("all data are sent to thingSpeak channel.");
+  Serial1.println("all data are sent to thingSpeak channel.");
 }
 
 //erase all written data in flash
@@ -539,7 +539,7 @@ void initFlash(int pktcnt) {
         break;
     }
   }
-  Serial.println("all data in flash was erased successly.");
+  Serial1.println("all data in flash was erased successly.");
   pkt_num = 0;
 }
 
@@ -697,15 +697,15 @@ int readPacketFromFlash() {
         break;
     }
 
-    Serial.print("read packet number: ");
-    Serial.println(writtenPacket[i].num);
+    Serial1.print("read packet number: ");
+    Serial1.println(writtenPacket[i].num);
     sprintf(buf, "%d-%d-%d %d:%d:%d vehicle state :%d", 2000 + (writtenPacket[i].active_time.g_year), writtenPacket[i].active_time.g_month, writtenPacket[i].active_time.g_day, writtenPacket[i].active_time.g_hours, writtenPacket[i].active_time.g_minutes, writtenPacket[i].active_time.g_seconds, writtenPacket[i].active);
-    Serial.println(buf);
+    Serial1.println(buf);
     i++;
   }
 
-  Serial.print(i);
-  Serial.println(" packets in flash were Read Successly.");
+  Serial1.print(i);
+  Serial1.println(" packets in flash were Read Successly.");
 
   return i;
 }
@@ -859,15 +859,15 @@ void writePacketToFlash() {
       accel_data_store47.write(EEPROMpkt);
       break;
     default:
-      Serial.println("Not enough memory space to use.");
-      Serial.println("Initialize the flash address.");
+      Serial1.println("Not enough memory space to use.");
+      Serial1.println("Initialize the flash address.");
       initFlash(pkt_num - 1);
       pkt_num = 0;
       accel_data_store0.write(EEPROMpkt);
       break;
   }
 
-  Serial.println("Flash Writing Process Success.");
+  Serial1.println("Flash Writing Process Success.");
 
   pkt_num++;
 }
@@ -908,16 +908,16 @@ void packetMake(int active) {
     Serial.println(EEPROMpkt.active_time.g_minutes);
     Serial.println(EEPROMpkt.active_time.g_seconds);
   */
-  Serial.println("------------------");
+  Serial1.println("------------------");
   EEPROMpkt.active = active;
   EEPROMpkt.num = pkt_num;
 
 
-  Serial.println("written packet data : ");
-  Serial.println(EEPROMpkt.active);
-  Serial.println(EEPROMpkt.num);
-  Serial.println("============");
-  Serial.println("Packet Make Success");
+  Serial1.println("written packet data : ");
+  Serial1.println(EEPROMpkt.active);
+  Serial1.println(EEPROMpkt.num);
+  Serial1.println("============");
+  Serial1.println("Packet Make Success");
 }
 
 //get present time
@@ -928,22 +928,22 @@ void getHighActiveTime() {
   EEPROMpkt.active_time.g_hours = LowPower.rtc.getHours();
   EEPROMpkt.active_time.g_minutes = LowPower.rtc.getMinutes();
   EEPROMpkt.active_time.g_seconds = LowPower.rtc.getSeconds();
-  Serial.println("Timestamp Write Success");
+  Serial1.println("Timestamp Write Success");
 }
 
 int readBattery() {
   int readValue = analogRead(BAT_PIN);
-  Serial.print("reading value is ");
-  Serial.println(readValue);
-  
+  Serial1.print("reading value is ");
+  Serial1.println(readValue);
+
   return readValue;
 }
 /*****************************setup()*********************************/
 void setup() {
-  while (!Serial);
-  Serial.begin(SERIAL_BAUDRATE);
+  while (!Serial1);
+  Serial1.begin(SERIAL_BAUDRATE);
   pinMode(pin, INPUT_PULLUP);
-  pinMode(LED_BUILTIN,OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 
   pkt_num = 0;
 
@@ -955,8 +955,8 @@ void setup() {
   */
 
   while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
+    Serial1.print("Attempting to connect to SSID: ");
+    Serial1.println(ssid);
 
     status = WiFi.begin(ssid, pass);
 
@@ -1005,24 +1005,27 @@ void setup() {
   adxl.singleTapINT(0);
 
   calibAccel();
+  delay(100);
   LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
 
-  Serial.println("mcu is going to sleep.. ");
-  Serial.println();
-  Serial.end();
+  Serial1.println("mcu is going to sleep.. ");
+  Serial1.println();
+
+  delay(100);
+  //  Serial1.end();
   LowPower.sleep();
 }
 
 /**********************************loop()******************************/
 void loop() {
-  Serial.begin(SERIAL_BAUDRATE);
-  while (!Serial);
-  Serial.println("wake up!");
+//  Serial1.begin(SERIAL_BAUDRATE);
+  //  while (!Serial);
+  Serial1.println("wake up!");
 
   //at 24 o'clock, sending data to server via AP
   if (time_flag) {
-    Serial.println("onTime interrupt generated!");
-//    resetEpoch();
+    Serial1.println("onTime interrupt generated!");
+    //    resetEpoch();
     time_flag = false;
 
     sendVoltageStateThingSpeak();
@@ -1030,28 +1033,31 @@ void loop() {
       int num = readPacketFromFlash();
 
       if (num == pkt_num) {
-        Serial.println("all written packets were read from flash Successly.");
+        Serial1.println("all written packets were read from flash Successly.");
       }
 
       sendThingSpeak(pkt_num);
-
+      delay(100);
       initFlash(pkt_num);
+      delay(100);
     }
     adxl.setActivityXYZ(0, 0, 1);
     adxl.ActivityINT(1);
 
     //attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+    delay(100);
     LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
   }
 
   //if activity interrupt signal occur from adxl345, accel_flag is true
   else if (accel_flag) {
-    
+
     accel_flag = false;
     AccelData accel;
     calculAccel(accel);
     //  packetMake(accel.svg_max, accel.avg_svg);
     //  writePacketToFlash();
+    delay(100);
 
     //Determine whether the average accel-value is higher or lower than the reference value,
     //if lower, go "just normal mode" : 24'o clock alarm setting and waiting for activity INT
@@ -1059,28 +1065,36 @@ void loop() {
     if (accel.avg_svg < DEFINE_ACCEL) {
       //sendThingSpeakOnce(0, pkt_num);
       packetMake(0);
+      delay(100);
       writePacketToFlash();
-      Serial.print(accel.avg_svg);
-      Serial.print(" is < ");
-      Serial.println(DEFINE_ACCEL);
-      Serial.println("just normal mode.");
-      LowPower.rtc.attachInterrupt(onTimeFlag);
+      delay(100);
 
+      Serial1.print(accel.avg_svg);
+      Serial1.print(" is < ");
+      Serial1.println(DEFINE_ACCEL);
+      Serial1.println("just normal mode.");
+
+      delay(100);
+      LowPower.rtc.attachInterrupt(onTimeFlag);
       adxl.setActivityXYZ(1, 1, 1);
       adxl.ActivityINT(1);
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
     } else {
       //sendThingSpeakOnce(1, pkt_num);
       packetMake(1);
+      delay(100);
       writePacketToFlash();
+      delay(100);
 
-      Serial.print(accel.avg_svg);
-      Serial.print(" is > ");
-      Serial.println(DEFINE_ACCEL);
-      Serial.print("Active ");
-      Serial.print(ALARM_TIMING / 1000);
-      Serial.println("sec alarm ON set");
+      Serial1.print(accel.avg_svg);
+      Serial1.print(" is > ");
+      Serial1.println(DEFINE_ACCEL);
+      Serial1.print("Active ");
+      Serial1.print(ALARM_TIMING / 1000);
+      Serial1.println("sec alarm ON set");
 
+      delay(100);
       LowPower.rtc.disableAlarm();
       /*
         LowPower.rtc.setAlarmSeconds(30);
@@ -1089,7 +1103,6 @@ void loop() {
       LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
-
     }
   }//end of accel_flag
 
@@ -1100,20 +1113,25 @@ void loop() {
 
     AccelData accel;
     calculAccel(accel);
-
+    delay(100);
     //    packetMake(accel.svg_max, accel.avg_svg);
     //    writePacketToFlash();
 
     if (accel.avg_svg > DEFINE_ACCEL) {
       // sendThingSpeakOnce(1, pkt_num);
       packetMake(1);
+      delay(100);
       writePacketToFlash();
-      Serial.print(accel.avg_svg);
-      Serial.print(" is > ");
-      Serial.println(DEFINE_ACCEL);
-      Serial.print("and ");
-      Serial.print(ALARM_TIMING / 1000);
-      Serial.println("sec alarm is ON constantly.");
+      delay(100);
+
+      Serial1.print(accel.avg_svg);
+      Serial1.print(" is > ");
+      Serial1.println(DEFINE_ACCEL);
+      Serial1.print("and ");
+      Serial1.print(ALARM_TIMING / 1000);
+      Serial1.println("sec alarm is ON constantly.");
+
+      delay(100);
       LowPower.setAlarmIn(ALARM_TIMING);
       //LowPower.rtc.begin(false);
       LowPower.rtc.attachInterrupt(onHighFlag);
@@ -1121,29 +1139,32 @@ void loop() {
     else {
       // sendThingSpeakOnce(0, pkt_num);
       packetMake(0);
+      delay(100);
       writePacketToFlash();
-      Serial.print(accel.avg_svg);
-      Serial.println(" is < ");
-      Serial.println(DEFINE_ACCEL);
-      Serial.println("Last written.");
-      Serial.println("and alarm OFF set.");
+      delay(100);
+
+      Serial1.print(accel.avg_svg);
+      Serial1.println(" is < ");
+      Serial1.println(DEFINE_ACCEL);
+      Serial1.println("Last written.");
+      Serial1.println("and alarm OFF set.");
 
       LowPower.rtc.detachInterrupt();
       LowPower.rtc.disableAlarm();
       LowPower.rtc.setAlarmMinutes(SERVER_TIME);
       LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
-      LowPower.rtc.attachInterrupt(onTimeFlag);
 
+      delay(100);
+      LowPower.rtc.attachInterrupt(onTimeFlag);
       adxl.setActivityXYZ(1, 1, 1);
       adxl.ActivityINT(1);
-
       LowPower.attachInterruptWakeup(digitalPinToInterrupt(pin), onAccelFlag, FALLING);
+
     }
   }//end of setActiveAlarm_flag
-
-  Serial.println("mcu is going to sleep.. ");
-  Serial.println();
-  Serial.end();
+  Serial1.println("mcu is going to sleep.. ");
+  Serial1.println();
+  //Serial1.end();
   LowPower.sleep();
 }
 
@@ -1183,14 +1204,14 @@ void resetEpoch() {
     numberOfTries++;
 
     if (numberOfTries >= maxTries) {
-      Serial.println("NTP unreachable!");
+      Serial1.println("NTP unreachable!");
       numberOfTries = 0;
       delay(2000);
     }
   } while (epoch == 0);
 
-  Serial.print("Epoch received : ");
-  Serial.println(epoch);
+  Serial1.print("Epoch received : ");
+  Serial1.println(epoch);
   //    LowPower.rtc.setEpoch(epoch + GMT);
   LowPower.rtc.setEpoch(epoch);
   printEpoch();
@@ -1198,39 +1219,39 @@ void resetEpoch() {
 
 void print2digits(int number) {
   if (number < 10) {
-    Serial.print("0"); // print a 0 before if the number is < than 10
+    Serial1.print("0"); // print a 0 before if the number is < than 10
   }
-  Serial.print(number);
+  Serial1.print(number);
 }
 
 void printWiFiStatus() {
-  Serial.print("SSID : ");
-  Serial.println(WiFi.SSID());
+  Serial1.print("SSID : ");
+  Serial1.println(WiFi.SSID());
 
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address : ");
-  Serial.println(ip);
+  Serial1.print("IP Address : ");
+  Serial1.println(ip);
 
   long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI) : ");
-  Serial.print(rssi);
-  Serial.println( "dBm");
+  Serial1.print("signal strength (RSSI) : ");
+  Serial1.print(rssi);
+  Serial1.println( "dBm");
 }
 
 void printEpoch() {
-  Serial.println("-----------------");
-  Serial.println("set WiFi RTC");
+  Serial1.println("-----------------");
+  Serial1.println("set WiFi RTC");
   print2digits(LowPower.rtc.getDay());
-  Serial.print("/");
+  Serial1.print("/");
   print2digits(LowPower.rtc.getMonth());
-  Serial.print("/");
+  Serial1.print("/");
   print2digits(LowPower.rtc.getYear());
-  Serial.print(" ");
+  Serial1.print(" ");
   // ...and time
   print2digits(LowPower.rtc.getHours());
-  Serial.print(":");
+  Serial1.print(":");
   print2digits(LowPower.rtc.getMinutes());
-  Serial.print(":");
+  Serial1.print(":");
   print2digits(LowPower.rtc.getSeconds());
-  Serial.println();
+  Serial1.println();
 }
