@@ -12,13 +12,13 @@
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 05  //ThingSpeak sending time(minute-debug-)
-#define ALARM_TIMING 5000  //vehicle active mode measure-alarm timing(millis-debug-)
-#define ACCEL_RANGE 8 //accelerometer range setting value
-#define ACT_THRESHOLD 75  //accelerometer activity occur threshold
+#define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
+#define ALARM_TIMING 60000  //vehicle active mode measure-alarm timing(millis-debug-)
+#define ACCEL_RANGE 4 //accelerometer range setting value
+#define ACT_THRESHOLD 20  //accelerometer activity occur threshold
 //accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
 #define ACCEL_RATE 1.56  //accelerometer data rate setting value
-#define SAMPLING_NUM 20.0 // number of sampling (about 12.8 s)
+#define SAMPLING_NUM 15.0 // number of sampling (about 12.8 s)
 #define ACCEL_DELAY 640 //measurement sampling timing for 1.56 Hz
 #define DEFINE_ACCEL 10.0  //active alarm mode condition
 #define pin 15
@@ -1041,7 +1041,7 @@ void loop() {
       initFlash(pkt_num);
       delay(100);
     }
-    adxl.setActivityXYZ(0, 0, 1);
+    adxl.setActivityXYZ(1, 1, 1);
     adxl.ActivityINT(1);
 
     //attachInterrupt(digitalPinToInterrupt(pin), onAccelFlag, FALLING);

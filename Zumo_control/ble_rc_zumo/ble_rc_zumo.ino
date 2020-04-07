@@ -33,10 +33,13 @@ void loop()
 
 //      Serial.println((int)buf[1]);
 //      Serial.println((int)buf[2]);
+/*
       if(buf[2]=='0')
         buf[2]=0;
       if(buf[1]=='0')
         buf[1]=0;
+        */
+        
 //      Serial.println("==");
      
     if(buf[0]=='T'){
@@ -45,15 +48,19 @@ void loop()
       
      // throttle=map(throttle,0,1023,1150,1850);
       Serial.println(throttle);
-    }else if(buf[0]=='S'){
+    }
+    
+    else if(buf[0]=='S'){
       st[0]=buf[1];
       st[1]=buf[2];
    //   steering=map(steering,0,1023,1150,1850);
       Serial.println(steering);
-    }else{
+    }
+    else{
       Serial.println("not defined packet!!");
     }
    }
+   
     for(int i=0;i<4;i++){
         buf[i]=0;
     }
