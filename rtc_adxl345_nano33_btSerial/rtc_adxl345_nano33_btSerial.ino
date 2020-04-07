@@ -15,7 +15,7 @@
 #define SERVER_TIME 00  //ThingSpeak sending time(minute-debug-)
 #define ALARM_TIMING 60000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 4 //accelerometer range setting value
-#define ACT_THRESHOLD 20  //accelerometer activity occur threshold
+#define ACT_THRESHOLD 30  //accelerometer activity occur threshold
 //accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
 #define ACCEL_RATE 1.56  //accelerometer data rate setting value
 #define SAMPLING_NUM 15.0 // number of sampling (about 12.8 s)

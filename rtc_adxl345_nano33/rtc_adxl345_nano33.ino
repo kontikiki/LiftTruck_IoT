@@ -1016,7 +1016,7 @@ void setup() {
 /**********************************loop()******************************/
 void loop() {
   Serial.begin(SERIAL_BAUDRATE);
-  while (!Serial);
+  //while (!Serial);
   Serial.println("wake up!");
 
   //at 24 o'clock, sending data to server via AP
