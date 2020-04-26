@@ -92,7 +92,7 @@ EEPROMpacket writtenPacket[128];
 int pkt_num;
 
 void sendThingSpeak(int number);
-void initFlash(int pktcnt);
+void initFlash();
 int readPacketFromFlash();
 void writePacketToFlash();
 //void packetMake(float svg_max, float avg_svg);
