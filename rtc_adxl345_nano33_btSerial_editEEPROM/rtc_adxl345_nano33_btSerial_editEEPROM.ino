@@ -23,6 +23,7 @@
 #define DEFINE_ACCEL 10.0  //active alarm mode condition
 #define pin 15
 #define BAT_PIN A3
+#define DEVICE_ID 999999
 /*
    accelerometer
 */
@@ -76,6 +77,7 @@ const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
 */
 bool number1 = 0;
 uint8_t number2 = 0;
+int number3=DEVICE_ID;
 //String myStatus = "";
 String timeStamp = "";
 
@@ -234,6 +236,8 @@ void sendVoltageStateThingSpeak() {
   sprintf(buf, "readValue : %d, battery voltage : %0.2f V", battery, voltage);
   String myStatus = String(buf);
   ThingSpeak.setStatus(myStatus);
+  ThingSpeak.setField(3, number3);
+  
   x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if (x == 200) {
     Serial1.println("Channel update successful.");
@@ -264,7 +268,7 @@ void sendThingSpeak(int number) {
     
     ThingSpeak.setField(1, number1);
     ThingSpeak.setField(2, number2);
-    //    ThingSpeak.setField(3, number3);
+    ThingSpeak.setField(3, number3);
     
     y = ThingSpeak.setCreatedAt(timeStamp);
 
