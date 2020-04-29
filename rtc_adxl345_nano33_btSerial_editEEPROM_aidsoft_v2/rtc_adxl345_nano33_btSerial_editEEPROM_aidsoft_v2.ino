@@ -36,11 +36,9 @@
 ADXL345 adxl = ADXL345();   //I2C
 //ADXL345 adxl = ADXL345(3);  // SPI
 
-//const int pin = 15;  //accelerometer activity-wake up interrupt pin
-
 typedef struct {
-  float avg_svg;
-  float svg_max;
+  float avg_acc;
+  float acc_max;
 } AccelData;
 
 float base_accx, base_accy, base_accz;
@@ -51,7 +49,6 @@ float Calculate_std(float SVM_value);
 void dataInit();
 float SVM_buf[SVM_BUFSIZE];
 float SVM_sum;
-
 float SVM_avg; //The average value of STD values during the measurement time
 
 //Buffer for calculating STD values
@@ -105,7 +102,7 @@ int pkt_num;
 void initFlash();
 int readPacketFromFlash();
 void writePacketToFlash();
-//void packetMake(float svg_max, float avg_svg);
+//void packetMake(float acc_max, float avg_acc);
 void packetMake(bool active);
 void getHighActiveTime();
 
@@ -205,7 +202,7 @@ void calculAccel(AccelData& accel) {
   float cal_x, cal_y, cal_z;
 
   float total_std = 0;
-  float svg_acc = 0;
+  float svm_acc = 0;
   float avg_std = 0;
   float std_max = 0;
   float temp_avg=0;
@@ -223,7 +220,7 @@ void calculAccel(AccelData& accel) {
       cal_y = (float)y - base_accy;
       cal_z = (float)z - base_accz;
 
-      svg_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
+      svm_acc = sqrt(pow(cal_x, 2.0) + pow(cal_y, 2.0) + pow(cal_z, 2.0));
 /*
       // Output Results to Serial
       Serial1.print(cal_x);
@@ -231,10 +228,10 @@ void calculAccel(AccelData& accel) {
       Serial1.print(cal_y);
       Serial1.print(", ");
       Serial1.println(cal_z);
-      Serial1.print("svg= ");
-      Serial1.println(svg_acc);
+      Serial1.print("svm= ");
+      Serial1.println(svm_acc);
 */
-      STD = Calculate_std(svg_acc);
+      STD = Calculate_std(svm_acc);
 
       if (STD > std_max) {
         std_max = STD;
@@ -261,8 +258,8 @@ void calculAccel(AccelData& accel) {
     Serial1.print("std_max=");
     Serial1.println(std_max);
     Serial1.println("------------------");
-    accel.avg_svg = avg_std;
-    accel.svg_max = std_max;
+    accel.avg_acc = avg_std;
+    accel.acc_max = std_max;
   }
 
   void sendVoltageStateToServer() {
@@ -381,17 +378,17 @@ void calculAccel(AccelData& accel) {
   //make data with packet time & accel data
 
   /*
-    void packetMake(float svg_max, float avg_svg) {
+    void packetMake(float acc_max, float avg_acc) {
     getHighActiveTime();
     Serial.println("------------------");
-    EEPROMpkt.svg_max = svg_max;
-    EEPROMpkt.avg_svg = avg_svg;
+    EEPROMpkt.acc_max = acc_max;
+    EEPROMpkt.avg_acc = avg_acc;
     EEPROMpkt.num = pkt_num;
 
 
     Serial.println("written packet data : ");
-    Serial.println(EEPROMpkt.svg_max);
-    Serial.println(EEPROMpkt.avg_svg);
+    Serial.println(EEPROMpkt.acc_max);
+    Serial.println(EEPROMpkt.avg_acc);
     Serial.println(EEPROMpkt.num);
     Serial.println("============");
     Serial.println("Packet Make Success");
@@ -543,13 +540,13 @@ void calculAccel(AccelData& accel) {
       //Determine whether the average accel-value is higher or lower than the reference value,
       //if lower, go "just normal mode" : 24'o clock alarm setting and waiting for activity INT
       //if higher,go "active-alarm setting mode" : every 30 minutes wake-up setting, and estimate acceleration
-      if (accel.avg_svg < DEFINE_ACCEL) {
+      if (accel.avg_acc < DEFINE_ACCEL) {
         packetMake(0);
         delay(100);
         writePacketToFlash();
         delay(100);
 
-        Serial1.print(accel.avg_svg);
+        Serial1.print(accel.avg_acc);
         Serial1.print(" is < ");
         Serial1.println(DEFINE_ACCEL);
         Serial1.println("just normal mode.");
@@ -566,7 +563,7 @@ void calculAccel(AccelData& accel) {
         writePacketToFlash();
         delay(100);
 
-        Serial1.print(accel.avg_svg);
+        Serial1.print(accel.avg_acc);
         Serial1.print(" is > ");
         Serial1.println(DEFINE_ACCEL);
         Serial1.print("Active ");
@@ -589,13 +586,13 @@ void calculAccel(AccelData& accel) {
       calculAccel(accel);
       delay(100);
 
-      if (accel.avg_svg > DEFINE_ACCEL) {
+      if (accel.avg_acc > DEFINE_ACCEL) {
         packetMake(1);
         delay(100);
         writePacketToFlash();
         delay(100);
 
-        Serial1.print(accel.avg_svg);
+        Serial1.print(accel.avg_acc);
         Serial1.print(" is > ");
         Serial1.println(DEFINE_ACCEL);
         Serial1.print("and ");
@@ -612,7 +609,7 @@ void calculAccel(AccelData& accel) {
         writePacketToFlash();
         delay(100);
 
-        Serial1.print(accel.avg_svg);
+        Serial1.print(accel.avg_acc);
         Serial1.println(" is < ");
         Serial1.println(DEFINE_ACCEL);
         Serial1.println("Last written.");
