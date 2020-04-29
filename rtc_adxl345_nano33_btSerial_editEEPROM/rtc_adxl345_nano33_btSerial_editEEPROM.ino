@@ -8,11 +8,11 @@
 #include <SparkFun_ADXL345.h>
 #include <math.h>
 #include <FlashAsEEPROM_yn.h>
-#include <ThingSpeak.h>
+#include <ThingSpeak_DT.h>
 #include "secrets.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 20  //ThingSpeak sending time(minute-debug-)
+#define SERVER_TIME 25  //ThingSpeak sending time(minute-debug-)
 #define ALARM_TIMING 5000  //vehicle active mode measure-alarm timing(millis-debug-)
 #define ACCEL_RANGE 4 //accelerometer range setting value
 #define ACT_THRESHOLD 30  //accelerometer activity occur threshold
@@ -221,7 +221,10 @@ void sendThingSpeakOnce(bool active, uint8_t num) {
     Serial1.println("Channel update successful.");
   }
   else {
-    Serial1.println("Problem updating channel. HTTP error code ");
+    Serial.print(" error code :");
+    Serial.println(x);
+    
+   // Serial1.println("Problem updating channel. HTTP error code ");
   }
   Serial1.println();
 }
@@ -243,7 +246,9 @@ void sendVoltageStateThingSpeak() {
     Serial1.println("Channel update successful.");
   }
   else {
-    Serial1.println("Problem updating channel. HTTP error code ");
+    Serial.print(" error code :");
+    Serial.println(x);
+  //  Serial1.println("Problem updating channel. HTTP error code ");
   }
   memset(buf, 0, sizeof(buf));
   delay(20000);
@@ -284,7 +289,9 @@ void sendThingSpeak(int number) {
       Serial1.println("Channel update successful.");
     }
     else {
-      Serial1.println("Problem updating channel. HTTP error code ");
+      Serial.print(" error code :");
+    Serial.println(x);
+     // Serial1.println("Problem updating channel. HTTP error code ");
     }
     /*
       }
