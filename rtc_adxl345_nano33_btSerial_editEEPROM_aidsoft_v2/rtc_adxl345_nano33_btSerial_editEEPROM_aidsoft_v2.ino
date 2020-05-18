@@ -1,32 +1,36 @@
-#include <WiFiNINA.h>
-#include <WiFiUdp.h>
-//#include "SparkFunLSM6DS3.h"
+#include "WiFiNINA.h"
+#include "WiFiUdp.h"
 #include "Wire.h"
-//#include <SPI.h>
-//#include <time.h>
-#include <ArduinoLowPower.h>
-#include <SparkFun_ADXL345.h>
+#include "ArduinoLowPower.h"
+#include "SparkFun_ADXL345.h"
 #include <math.h>
-#include <FlashAsEEPROM_yn.h>
+#include "FlashAsEEPROM_yn.h"
 #include "AidSoft.h"
 #include "secrets.h"
-#include <ArduinoJson.h>
+#include "ArduinoJson.h"
 
 #define SERIAL_BAUDRATE 9600  //serial baud rate
-#define SERVER_TIME 00 //Server sending time(minute-debug-)
-#define ALARM_TIMING 5000  //vehicle active mode measure-alarm timing(millis-debug-)
+
+#define SERVER_HOURS 00 //Server sending time(-debug-)
+#define SERVER_MINUTES 15
+#define SERVER_SECONDS 00
+
+#define ALARM_TIMING 600000  //vehicle active mode measure-alarm timing(millis-debug-)
+
 #define ACCEL_RANGE 4 //accelerometer range setting value
 #define ACT_THRESHOLD 25  //accelerometer activity occur threshold
 //accel data rate : 3200 ~ 0.098 our target rate is 100,50,25,12.5,6.25,3.125,1.563
 #define ACCEL_RATE 100  //accelerometer data rate setting value
 #define SAMPLING_NUM 10.0 // number of sampling
+#define MEASURING_NUM 100 //measuring num per one sample
 #define ACCEL_DELAY 10 //measurement sampling timing for 100 Hz
+#define SPL_PERIOD    10  
+#define SVM_BUFSIZE   (SPL_PERIOD*1) // buffer for calculation of accel avg sample
 #define DEFINE_ACCEL 5.0  //active alarm mode condition
-#define SPL_PERIOD    10
-#define SVM_BUFSIZE   (SPL_PERIOD*1)
-#define MEASURING_NUM 100
-#define pin 15
-#define BAT_PIN A3
+
+#define pin 15  //accel activity interrupt pin
+#define BAT_PIN A3  //battery voltage measuring pin
+#define VOLTAGE_FACTOR 4  //real value*4 = total battery value 
 #define DEVICE_ID "A0001"
 
 /*
@@ -266,7 +270,8 @@ void calculAccel(AccelData& accel) {
     digitalWrite(LED_BUILTIN, HIGH);
     int x;
     int battery = readBattery();
-    float voltage = ((float)map(battery, 0, 4096, 0, 60)) / 10.0;
+    float voltage = ((float)map(battery, 0, 1024, 0, 33)) / 10.0;
+    voltage=voltage*VOLTAGE_FACTOR;
     Serial1.print(" battery voltage : ");
     Serial1.println(voltage);
     sprintf(buf, "readValue : %d, battery voltage : %0.2f V", battery, voltage);
@@ -450,8 +455,12 @@ void calculAccel(AccelData& accel) {
 
     resetEpoch(); //getting present time epoch
 
-    LowPower.rtc.setAlarmMinutes(SERVER_TIME);  //setting alarm time every hours
-    LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
+    WiFi.disconnect();
+    WiFi.lowPowerMode();
+    status = WL_IDLE_STATUS;
+    
+    LowPower.rtc.setAlarmTime(SERVER_HOURS,SERVER_MINUTES,SERVER_SECONDS);  //setting alarm time
+    LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_HHMMSS);
     LowPower.rtc.attachInterrupt(onTimeFlag);  //alarm interrupt wake up setting
 
     //accelerometer initial seqeunce timing value
@@ -508,6 +517,16 @@ void calculAccel(AccelData& accel) {
       //    resetEpoch();
       time_flag = false;
 
+      WiFi.noLowPowerMode();
+
+    delay(500);
+      while (status != WL_CONNECTED) {
+      Serial.print("Attempting to connect to SSID: ");
+      Serial.println(ssid);
+      status = WiFi.begin(ssid, pass);
+      delay(5000);
+    }
+    printWiFiStatus();
       sendVoltageStateToServer();
       if (pkt_num > 0) {
         int num = readPacketFromFlash();
@@ -521,6 +540,11 @@ void calculAccel(AccelData& accel) {
         initFlash();
         delay(100);
       }
+
+      WiFi.disconnect();
+    WiFi.lowPowerMode();
+    status = WL_IDLE_STATUS;
+    
       adxl.setActivityXYZ(1, 1, 1);
       adxl.ActivityINT(1);
 
@@ -617,8 +641,8 @@ void calculAccel(AccelData& accel) {
 
         LowPower.rtc.detachInterrupt();
         LowPower.rtc.disableAlarm();
-        LowPower.rtc.setAlarmMinutes(SERVER_TIME);
-        LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_MMSS);
+        LowPower.rtc.setAlarmTime(SERVER_HOURS,SERVER_MINUTES,SERVER_SECONDS);
+        LowPower.rtc.enableAlarm(LowPower.rtc.MATCH_HHMMSS);
 
         delay(100);
         LowPower.rtc.attachInterrupt(onTimeFlag);
